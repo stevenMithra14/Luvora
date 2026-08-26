@@ -18,7 +18,9 @@ const getPlayableAudioUrl = (rawUrl?: string) => {
     return 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
   }
   if (trimmed.startsWith('/uploads')) {
-    return `http://127.0.0.1:8000${trimmed}`;
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+    const backendOrigin = apiBase.replace(/\/api\/?$/, '');
+    return `${backendOrigin}${trimmed}`;
   }
   return trimmed;
 };

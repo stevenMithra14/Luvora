@@ -4,7 +4,7 @@ export interface UploadResponse {
   filename: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
 const ALLOWED_PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 const MAX_PHOTO_SIZE = 10 * 1024 * 1024; // 10MB
 
