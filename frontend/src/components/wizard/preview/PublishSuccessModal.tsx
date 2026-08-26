@@ -42,12 +42,10 @@ export const PublishSuccessModal: React.FC<PublishSuccessModalProps> = ({
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
-  // High-res QR code image URL generator
   const getQrCodeImageUrl = (size = 300) => {
     return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(publicUrl)}&color=ec4899&bgcolor=090d16`;
   };
 
-  // Web Share API Integration with fallback
   const handleWebShare = async () => {
     if (navigator.share) {
       try {
@@ -56,7 +54,7 @@ export const PublishSuccessModal: React.FC<PublishSuccessModalProps> = ({
           text: 'I created a special digital gift experience for you on Luvora!',
           url: publicUrl,
         });
-        setShareFeedback('Shared successfully!');
+        setShareFeedback('Shared!');
         setTimeout(() => setShareFeedback(''), 2500);
       } catch (err: any) {
         if (err.name !== 'AbortError') {
@@ -68,7 +66,6 @@ export const PublishSuccessModal: React.FC<PublishSuccessModalProps> = ({
     }
   };
 
-  // Download QR Code PNG (Supports Heart Shape clipping)
   const handleDownloadQr = async () => {
     setIsDownloading(true);
     try {
@@ -141,7 +138,7 @@ export const PublishSuccessModal: React.FC<PublishSuccessModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xl overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-xl overflow-hidden">
         {/* SVG Clip Path Definition for Heart Shape */}
         <svg width="0" height="0" className="absolute pointer-events-none">
           <defs>
@@ -152,155 +149,172 @@ export const PublishSuccessModal: React.FC<PublishSuccessModalProps> = ({
         </svg>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          initial={{ opacity: 0, scale: 0.9, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-          className="relative w-full max-w-lg rounded-3xl border border-pink-500/30 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 p-6 sm:p-8 text-center shadow-2xl backdrop-blur-2xl my-8"
+          exit={{ opacity: 0, scale: 0.9, y: 15 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="relative w-full max-w-lg md:max-w-3xl max-h-[92vh] flex flex-col rounded-3xl border border-pink-500/30 bg-slate-900 text-center shadow-2xl backdrop-blur-2xl overflow-hidden"
         >
-          {/* Close Button */}
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-5 right-5 h-8 w-8 rounded-full bg-slate-950 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
-
-          {/* Animated Heart Icon */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: [0, 1.2, 1] }}
-            transition={{ duration: 0.6, ease: 'backOut' }}
-            className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-pink-500 via-rose-500 to-purple-600 text-white shadow-xl shadow-pink-500/30"
-          >
-            <Heart className="h-8 w-8 fill-white/20 animate-pulse" />
-          </motion.div>
-
-          {/* Headline */}
-          <h2 className="font-heading text-3xl font-bold tracking-tight text-white mb-2">
-            Your gift is ready ❤️
-          </h2>
-          <p className="text-xs text-slate-300 max-w-sm mx-auto mb-6 leading-relaxed">
-            Your digital experience has been published successfully for free. Anyone with the secret link or QR code can unlock it!
-          </p>
-
-          {/* Premium QR Code Card Section */}
-          <div className="mb-6 p-6 rounded-3xl bg-slate-950/90 border border-pink-500/20 shadow-2xl relative overflow-hidden">
-            {/* Ambient Glowing Gradient background */}
-            <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-pink-500/10 blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-12 -left-12 h-32 w-32 rounded-full bg-purple-500/10 blur-2xl pointer-events-none" />
-
-            {/* QR Card Header */}
-            <div className="flex flex-col items-center justify-center gap-1 text-xs font-semibold text-pink-300 mb-4">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-pink-400" />
-                <span>Scan this to open your surprise ❤️</span>
-              </div>
-              {isHeartQrOccasion && (
-                <span className="text-[10px] font-mono font-bold tracking-widest text-amber-300 uppercase bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30 mt-1 shadow-sm">
-                  💖 Heart-Shaped QR Active
-                </span>
-              )}
+          {/* Close Button Header */}
+          <div className="flex items-center justify-between p-4 px-6 border-b border-slate-800 bg-slate-950/80">
+            <div className="flex items-center gap-2 text-xs font-bold text-pink-300">
+              <Sparkles className="h-4 w-4 text-pink-400" />
+              <span>Gift Created & Published</span>
             </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-8 w-8 rounded-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
 
-            {/* QR Code Image Frame (Heart Shaped for Love/Anniversary) */}
-            {isHeartQrOccasion ? (
-              <div className="relative mx-auto h-52 w-52 flex items-center justify-center group mb-4">
-                {/* Pulsing Glowing Background */}
-                <div
-                  className="absolute inset-0 bg-gradient-to-tr from-pink-500 via-rose-500 to-purple-600 blur-md opacity-60 animate-pulse pointer-events-none"
-                  style={{ clipPath: 'url(#heart-qr-clip)' }}
-                />
-                <div
-                  className="relative h-full w-full bg-slate-900 p-2.5 shadow-2xl flex items-center justify-center transition-transform hover:scale-105 duration-300 cursor-pointer"
-                  style={{ clipPath: 'url(#heart-qr-clip)' }}
+          {/* Responsive Modal Scrollable Content */}
+          <div className="p-5 sm:p-7 overflow-y-auto max-h-[calc(92vh-4rem)]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+              {/* LEFT COLUMN: Heart, Headline & QR Card */}
+              <div className="flex flex-col items-center text-center space-y-4">
+                {/* Animated Heart Icon */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [0, 1.2, 1] }}
+                  transition={{ duration: 0.5, ease: 'backOut' }}
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-pink-500 via-rose-500 to-purple-600 text-white shadow-xl shadow-pink-500/30"
                 >
-                  <img
-                    src={getQrCodeImageUrl(350)}
-                    alt="Luvora Heart Gift QR Code"
-                    className="h-full w-full object-cover bg-slate-950 p-1"
-                    style={{ clipPath: 'url(#heart-qr-clip)' }}
-                  />
+                  <Heart className="h-7 w-7 fill-white/20 animate-pulse" />
+                </motion.div>
+
+                <div>
+                  <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-white mb-1">
+                    Your gift is ready ❤️
+                  </h2>
+                  <p className="text-xs text-slate-300 max-w-xs mx-auto leading-relaxed">
+                    Your digital experience is published for free. Share the link or QR code with your recipient!
+                  </p>
+                </div>
+
+                {/* QR Code Card Section */}
+                <div className="w-full p-4 rounded-2xl bg-slate-950 border border-pink-500/20 shadow-xl relative overflow-hidden flex flex-col items-center">
+                  <div className="flex items-center gap-1 text-[11px] font-semibold text-pink-300 mb-3">
+                    <Sparkles className="h-3 w-3 text-pink-400" />
+                    <span>Scan to open surprise ❤️</span>
+                  </div>
+
+                  {/* QR Code Image */}
+                  {isHeartQrOccasion ? (
+                    <div className="relative mx-auto h-40 w-40 flex items-center justify-center mb-3">
+                      <div
+                        className="absolute inset-0 bg-gradient-to-tr from-pink-500 via-rose-500 to-purple-600 blur-md opacity-60 animate-pulse pointer-events-none"
+                        style={{ clipPath: 'url(#heart-qr-clip)' }}
+                      />
+                      <div
+                        className="relative h-full w-full bg-slate-900 p-2 shadow-xl flex items-center justify-center cursor-pointer"
+                        style={{ clipPath: 'url(#heart-qr-clip)' }}
+                      >
+                        <img
+                          src={getQrCodeImageUrl(300)}
+                          alt="Luvora Heart Gift QR Code"
+                          className="h-full w-full object-cover bg-slate-950 p-1"
+                          style={{ clipPath: 'url(#heart-qr-clip)' }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative mx-auto h-36 w-36 rounded-xl bg-slate-900 border border-pink-500/30 p-2.5 shadow-lg flex items-center justify-center mb-3">
+                      <img
+                        src={getQrCodeImageUrl(300)}
+                        alt="Luvora Gift QR Code"
+                        className="h-full w-full object-contain rounded-lg bg-slate-950 p-1"
+                      />
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleDownloadQr}
+                      disabled={isDownloading}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-pink-500/15 border border-pink-500/30 text-xs font-semibold text-pink-300 hover:bg-pink-500/25 transition-all cursor-pointer"
+                    >
+                      <Download className="h-3.5 w-3.5 text-pink-400" />
+                      <span>{isDownloading ? 'Saving...' : 'Download PNG'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleWebShare}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-xs font-semibold text-purple-300 hover:bg-purple-500/25 transition-all cursor-pointer"
+                    >
+                      <Share2 className="h-3.5 w-3.5 text-purple-400" />
+                      <span>{shareFeedback || 'Share Gift'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
-            ) : (
-              <div className="relative mx-auto h-48 w-48 rounded-2xl bg-slate-900 border border-pink-500/30 p-3 shadow-xl flex items-center justify-center group mb-4">
-                <img
-                  src={getQrCodeImageUrl(300)}
-                  alt="Luvora Gift QR Code"
-                  className="h-full w-full object-contain rounded-xl bg-slate-950 p-1"
-                />
+
+              {/* RIGHT COLUMN: Link Copy, Action Buttons & Edit Info */}
+              <div className="flex flex-col justify-center space-y-4 text-left">
+                {/* Public Link Copy Bar */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Public Share Link
+                  </span>
+                  <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-xl border border-slate-800">
+                    <span className="text-xs font-mono text-pink-300 truncate flex-1 block overflow-hidden select-all">
+                      {publicUrl}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      className="px-3 py-1.5 rounded-lg bg-pink-500/20 border border-pink-500/30 text-xs font-bold text-pink-300 flex items-center gap-1.5 shrink-0 hover:bg-pink-500/30 transition-colors cursor-pointer"
+                    >
+                      {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                      <span>{copiedLink ? 'Copied!' : 'Copy'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Primary Action Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <a
+                    href={publicUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 text-white font-bold text-xs shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:scale-[1.02] transition-all"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Open Gift</span>
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      navigate(`/edit/${editToken}`);
+                    }}
+                    className="flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-200 font-bold text-xs hover:border-slate-700 hover:text-white transition-all cursor-pointer"
+                  >
+                    <Edit className="h-4 w-4 text-sky-400" />
+                    <span>Edit Gift</span>
+                  </button>
+                </div>
+
+                {/* Edit Link & Author Key Box */}
+                <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                    Author Secret Edit Link
+                  </span>
+                  <p className="text-[11px] font-mono text-slate-400 break-all leading-tight">
+                    {editUrl}
+                  </p>
+                  <p className="text-[10px] text-slate-500 italic pt-1">
+                    Keep this secret edit link to modify your gift or add new photos anytime.
+                  </p>
+                </div>
               </div>
-            )}
-
-            {/* QR Action Buttons: Download PNG & Copy Link */}
-            <div className="flex items-center justify-center gap-2">
-              <button
-                type="button"
-                onClick={handleDownloadQr}
-                disabled={isDownloading}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-pink-500/10 border border-pink-500/30 text-xs font-semibold text-pink-300 hover:bg-pink-500/20 transition-all cursor-pointer"
-              >
-                <Download className="h-3.5 w-3.5 text-pink-400" />
-                <span>{isDownloading ? 'Saving...' : 'Download PNG'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleWebShare}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/30 text-xs font-semibold text-purple-300 hover:bg-purple-500/20 transition-all cursor-pointer"
-              >
-                <Share2 className="h-3.5 w-3.5 text-purple-400" />
-                <span>{shareFeedback || 'Share Gift'}</span>
-              </button>
             </div>
-          </div>
-
-          {/* Public Link Copy Bar */}
-          <div className="p-3.5 rounded-2xl bg-slate-950/90 border border-slate-800 mb-6 flex items-center gap-2">
-            <span className="text-xs font-mono text-pink-300 truncate flex-1 text-left px-1">
-              {publicUrl}
-            </span>
-            <button
-              type="button"
-              onClick={handleCopyLink}
-              className="px-3.5 py-1.5 rounded-xl bg-pink-500/10 border border-pink-500/20 text-xs font-semibold text-pink-300 flex items-center gap-1.5 shrink-0 hover:bg-pink-500/20 transition-colors"
-            >
-              {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-              <span>{copiedLink ? 'Copied!' : 'Copy Link'}</span>
-            </button>
-          </div>
-
-          {/* Core Action Grid */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            {/* 1. Open Gift */}
-            <a
-              href={publicUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold text-xs shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:scale-[1.02] transition-all"
-            >
-              <ExternalLink className="h-4 w-4" />
-              <span>Open Gift</span>
-            </a>
-
-            {/* 2. Edit Gift */}
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                navigate(`/edit/${editToken}`);
-              }}
-              className="flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-200 font-semibold text-xs hover:border-slate-700 hover:text-white transition-all"
-            >
-              <Edit className="h-4 w-4 text-sky-400" />
-              <span>Edit Gift</span>
-            </button>
-          </div>
-
-          <div className="text-[11px] text-slate-500 italic">
-            Save your Edit URL (<span className="text-slate-400 font-mono text-[10px]">{editUrl}</span>) to make updates anytime.
           </div>
         </motion.div>
       </div>

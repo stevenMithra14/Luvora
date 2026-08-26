@@ -391,13 +391,13 @@ export const EditGiftPage: React.FC = () => {
       </div>
 
       {/* Sticky Bottom Save Action Bar */}
-      <div className="sticky bottom-0 z-40 -mx-4 -mb-8 px-6 py-4 bg-slate-950/90 border-t border-slate-800/90 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+      <div className="sticky bottom-0 z-40 py-4 px-4 sm:px-10 bg-transparent pointer-events-none">
+        <div className="w-full flex items-center justify-between gap-4 pointer-events-auto">
           <a
             href={publicUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-slate-800 bg-slate-900/80 text-sm font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all duration-200"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-slate-800 bg-slate-900/90 text-sm font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all duration-200 shadow-lg backdrop-blur-md"
           >
             <ExternalLink className="h-4 w-4" />
             <span>View Public Gift</span>
