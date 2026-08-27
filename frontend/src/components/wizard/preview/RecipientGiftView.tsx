@@ -41,6 +41,7 @@ export const RecipientGiftView: React.FC = () => {
         <FloatingCassettePlayer
           tracks={data.musicTracks}
           singleMusicUrl={data.musicUrl}
+          spotifyTrack={data.spotifyTrack}
           autoStart={true}
         />
       )}

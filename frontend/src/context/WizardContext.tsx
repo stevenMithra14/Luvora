@@ -89,6 +89,20 @@ export interface MusicTrack {
   albumCoverUrl?: string;
 }
 
+export interface SpotifyTrack {
+  id: string;
+  name: string;
+  artist: string;
+  artists?: string[];
+  album: string;
+  albumArt: string;
+  durationMs?: number;
+  durationFormatted?: string;
+  previewUrl?: string;
+  spotifyUrl?: string;
+  uri?: string;
+}
+
 export interface WizardData {
   occasion: string;
   recipientName: string;
@@ -110,6 +124,8 @@ export interface WizardData {
   animationStyle: 'fade' | 'floating' | 'slide' | 'soft-reveal';
   musicUrl: string;
   musicTracks: MusicTrack[];
+  spotifyTrack?: SpotifyTrack | null;
+  musicSource?: 'custom' | 'spotify';
   password: string;
   passwordHint?: string;
 
@@ -138,6 +154,7 @@ interface WizardContextType {
   setMemoryConfig: (config: Partial<MemoryConfig>) => void;
   setMemories: (memories: WizardMemoryItem[]) => void;
   setMusicTracks: (tracks: MusicTrack[]) => void;
+  setSpotifyTrack: (track: SpotifyTrack | null) => void;
   setPhotos: (photos: WizardPhoto[]) => void;
   setSections: (sections: WizardSection[]) => void;
   setInteractives: (interactives: WizardInteractive[]) => void;
@@ -270,7 +287,17 @@ export const WizardProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setData((prev) => ({
       ...prev,
       musicTracks,
+      musicSource: 'custom',
       musicUrl: musicTracks.length > 0 ? musicTracks[0].url : '',
+    }));
+  };
+
+  const setSpotifyTrack = (track: SpotifyTrack | null) => {
+    setData((prev) => ({
+      ...prev,
+      spotifyTrack: track,
+      musicSource: track ? 'spotify' : 'custom',
+      musicUrl: track ? (track.previewUrl || track.spotifyUrl || '') : prev.musicUrl,
     }));
   };
 
@@ -339,6 +366,7 @@ export const WizardProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setMemoryConfig,
         setMemories,
         setMusicTracks,
+        setSpotifyTrack,
         setPhotos,
         setSections,
         setInteractives,

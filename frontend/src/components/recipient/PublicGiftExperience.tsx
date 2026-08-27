@@ -79,12 +79,16 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
   const memoriesFromApi = memoriesModule?.configuration_json?.memories;
   const memoryConfigFromApi = memoriesModule?.configuration_json?.memoryConfig;
 
+  const spotifyModule = (giftData.interactives || []).find((i) => i.interactive_type === 'spotify_music');
+  const spotifyTrackFromApi = spotifyModule?.configuration_json?.spotifyTrack;
+
   return (
     <div className={`min-h-screen w-full transition-colors duration-700 selection:bg-pink-500/30 ${theme.background} text-slate-100 font-sans relative overflow-x-hidden max-w-full`}>
       {/* Corner Cassette & Vinyl Music Player with Album Cover Artwork */}
-      {giftData.music_url && activeStage !== 'box' && (
+      {activeStage !== 'box' && (
         <FloatingCassettePlayer
           singleMusicUrl={giftData.music_url}
+          spotifyTrack={spotifyTrackFromApi}
           autoStart={true}
         />
       )}

@@ -38,14 +38,21 @@ export const MemoryEditor: React.FC = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    if (memories.length >= 10) {
+      setUploadError('Maximum limit of 10 media items reached (photos + videos). Remove a memory to upload more.');
+      return;
+    }
+
     setIsUploadingPhoto(true);
     setUploadError(null);
 
     try {
       const newMemories: WizardMemoryItem[] = [];
       const newPhotos: any[] = [];
+      const slotsRemaining = 10 - memories.length;
+      const countToUpload = Math.min(files.length, slotsRemaining);
 
-      for (let i = 0; i < files.length; i++) {
+      for (let i = 0; i < countToUpload; i++) {
         const file = files[i];
         if (file.size > 20 * 1024 * 1024) {
           setUploadError(`Photo file '${file.name}' exceeds 20MB limit.`);
@@ -89,13 +96,20 @@ export const MemoryEditor: React.FC = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    if (memories.length >= 10) {
+      setUploadError('Maximum limit of 10 media items reached (photos + videos). Remove a memory to upload more.');
+      return;
+    }
+
     setIsUploadingVideo(true);
     setUploadError(null);
 
     try {
       const newMemories: WizardMemoryItem[] = [];
+      const slotsRemaining = 10 - memories.length;
+      const countToUpload = Math.min(files.length, slotsRemaining);
 
-      for (let i = 0; i < files.length; i++) {
+      for (let i = 0; i < countToUpload; i++) {
         const file = files[i];
         if (file.size > 100 * 1024 * 1024) {
           setUploadError(`Video file '${file.name}' exceeds 100MB limit.`);
@@ -209,7 +223,7 @@ export const MemoryEditor: React.FC = () => {
               activeTab === 'items' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Memories ({memories.length})
+            Memories ({memories.length}/10)
           </button>
           <button
             type="button"

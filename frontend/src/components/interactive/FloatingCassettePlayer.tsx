@@ -1,16 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, SkipForward, SkipBack, Disc, Volume2, VolumeX } from 'lucide-react';
-import { MusicTrack } from '../../context/WizardContext';
+import { MusicTrack, SpotifyTrack } from '../../context/WizardContext';
 import { resolveMediaUrl } from '../../services/giftService';
 
 interface FloatingCassettePlayerProps {
   tracks?: MusicTrack[];
   singleMusicUrl?: string;
+  spotifyTrack?: SpotifyTrack | null;
   autoStart?: boolean;
 }
 
-const getPlayableAudioUrl = (rawUrl?: string) => {
+const getPlayableAudioUrl = (rawUrl?: string, spotifyPreviewUrl?: string) => {
+  if (spotifyPreviewUrl && spotifyPreviewUrl.startsWith('http')) {
+    return spotifyPreviewUrl;
+  }
   if (!rawUrl || typeof rawUrl !== 'string') {
     return 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
   }
@@ -24,9 +28,23 @@ const getPlayableAudioUrl = (rawUrl?: string) => {
 export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
   tracks,
   singleMusicUrl,
+  spotifyTrack,
   autoStart = false,
 }) => {
-  const playlist: MusicTrack[] = React.useMemo(() => {
+  const playlist: (MusicTrack & { isSpotify?: boolean; spotifyUrl?: string })[] = React.useMemo(() => {
+    if (spotifyTrack) {
+      return [
+        {
+          id: `spotify-${spotifyTrack.id}`,
+          url: spotifyTrack.previewUrl || spotifyTrack.spotifyUrl || singleMusicUrl || '',
+          title: spotifyTrack.name,
+          artist: spotifyTrack.artist,
+          albumCoverUrl: spotifyTrack.albumArt,
+          isSpotify: true,
+          spotifyUrl: spotifyTrack.spotifyUrl,
+        },
+      ];
+    }
     if (tracks && tracks.length > 0) return tracks;
     if (singleMusicUrl) {
       return [
@@ -40,7 +58,7 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
       ];
     }
     return [];
-  }, [tracks, singleMusicUrl]);
+  }, [tracks, singleMusicUrl, spotifyTrack]);
 
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -49,7 +67,7 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentTrack = playlist[currentTrackIndex] || playlist[0];
 
-  const currentAudioUrl = getPlayableAudioUrl(currentTrack?.url);
+  const currentAudioUrl = getPlayableAudioUrl(currentTrack?.url, spotifyTrack?.previewUrl);
 
   useEffect(() => {
     if (autoStart && currentAudioUrl && audioRef.current) {

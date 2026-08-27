@@ -155,6 +155,32 @@ export const resolveMediaUrl = (rawUrl?: string, fallbackUrl: string = ''): stri
   return trimmed;
 };
 
+export async function searchSpotifyApi(query: string, type: string = 'track'): Promise<{
+  status: 'success' | 'unconfigured' | 'error';
+  message?: string;
+  tracks: any[];
+  artists?: any[];
+  albums?: any[];
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/spotify/search?q=${encodeURIComponent(query)}&type=${encodeURIComponent(type)}`);
+    if (!response.ok) {
+      return {
+        status: 'error',
+        message: 'Music search is temporarily unavailable. Please try again.',
+        tracks: [],
+      };
+    }
+    return await response.json();
+  } catch (err) {
+    return {
+      status: 'error',
+      message: 'Music search is temporarily unavailable. Please try again.',
+      tracks: [],
+    };
+  }
+}
+
 export async function publishGiftApi(data: WizardData): Promise<PublishedGiftResponse> {
   const payload = {
     occasion_type: data.occasion || 'general',
@@ -163,7 +189,7 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
     title: data.title || data.coverTitle || 'A Special Gift For You',
     message: data.message || '',
     theme_id: data.themeId || 'theme-romantic',
-    music_url: data.musicUrl || null,
+    music_url: data.spotifyTrack ? (data.spotifyTrack.previewUrl || data.spotifyTrack.spotifyUrl || data.musicUrl) : (data.musicUrl || null),
     password: data.password && data.password.trim() ? data.password.trim() : null,
     password_hint: data.passwordHint && data.passwordHint.trim() ? data.passwordHint.trim() : null,
     password_enabled: (data as any).password_enabled ?? false,
@@ -194,6 +220,15 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
           memoryConfig: data.memoryConfig
         },
         display_order: data.interactives.length,
+        is_enabled: true
+      }] : []),
+      ...(data.spotifyTrack ? [{
+        interactive_type: 'spotify_music',
+        configuration_json: {
+          spotifyTrack: data.spotifyTrack,
+          musicSource: data.musicSource || 'spotify'
+        },
+        display_order: data.interactives.length + 1,
         is_enabled: true
       }] : [])
     ],

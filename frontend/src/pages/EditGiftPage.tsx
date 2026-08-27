@@ -29,7 +29,7 @@ import { SurpriseGoodieEditor } from '../components/goodies/editors/SurpriseGood
 
 export const EditGiftPage: React.FC = () => {
   const { edit_token } = useParams<{ edit_token: string }>();
-  const { data, setOccasion, setRecipientInfo, setCustomization, setPhotos, setInteractives, setGoodies, addGoodie, updateGoodie, removeGoodie } = useWizard();
+  const { data, setOccasion, setRecipientInfo, setCustomization, setMemories, setPhotos, setInteractives, setGoodies, addGoodie, updateGoodie, removeGoodie } = useWizard();
 
   const [publishedGift, setPublishedGift] = useState<PublishedGiftResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,6 +52,9 @@ export const EditGiftPage: React.FC = () => {
         setPublishedGift(res);
         setOccasion(res.occasion_type || 'general');
         setRecipientInfo(res.recipient_name, res.recipient_date || '', false);
+        const spotifyModule = (res.interactives || []).find((i) => i.interactive_type === 'spotify_music');
+        const memoriesModule = (res.interactives || []).find((i) => i.interactive_type === 'photo_memories');
+
         setCustomization({
           coverTitle: res.title || 'A Special Gift For You',
           coverSubtitle: 'Made with love & cherished memories',
@@ -59,7 +62,12 @@ export const EditGiftPage: React.FC = () => {
           message: res.message || '',
           themeId: res.theme_id || 'theme-romantic',
           musicUrl: res.music_url || '',
+          spotifyTrack: spotifyModule?.configuration_json?.spotifyTrack || null,
+          musicSource: spotifyModule ? 'spotify' : 'custom',
         });
+        if (memoriesModule?.configuration_json?.memories) {
+          setMemories(memoriesModule.configuration_json.memories);
+        }
         if (res.photos) {
           setPhotos(res.photos.map((p) => ({ id: p.id, fileUrl: p.file_url, caption: p.caption || '' })));
         }

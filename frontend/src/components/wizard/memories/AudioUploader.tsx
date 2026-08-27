@@ -4,11 +4,14 @@ import { Trash2, Upload, Loader2, AlertCircle, Link as LinkIcon, Plus, Disc, Mov
 import { useWizard, MusicTrack } from '../../../context/WizardContext';
 import { uploadAudioFile } from '../../../services/uploadService';
 
+import { SpotifyMusicPicker } from './SpotifyMusicPicker';
+
 export const AudioUploader: React.FC = () => {
   const { data, setMusicTracks } = useWizard();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tracks = data.musicTracks || [];
+  const [musicTab, setMusicTab] = useState<'custom' | 'spotify'>(data.musicSource === 'spotify' || data.spotifyTrack ? 'spotify' : 'custom');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
@@ -104,27 +107,65 @@ export const AudioUploader: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 p-6 rounded-3xl bg-slate-900/80 border border-slate-800 shadow-2xl backdrop-blur-xl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-5 p-5 sm:p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-xl">
+      {/* 1. MUSIC SELECTION MODE SWITCHER BAR */}
+      <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-4">
         <div className="flex items-center gap-2.5">
-          <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-pink-500/25">
+          <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-pink-500/25 shrink-0">
             <Disc className="h-5 w-5 animate-spin-slow" />
           </div>
           <div>
-            <h4 className="font-heading text-sm font-bold text-white">Background Music Playlist</h4>
-            <p className="text-[11px] text-slate-400">Add multiple songs with custom album covers for the corner cassette player</p>
+            <h4 className="font-heading text-sm font-bold text-white">Gift Background Music</h4>
+            <p className="text-[11px] text-slate-400">Select music from Spotify or upload custom MP3 tracks</p>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowAddForm((prev) => !prev)}
-          className="px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-xs font-extrabold text-white flex items-center gap-1.5 shadow-md hover:scale-105 transition-all cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add Song to Playlist</span>
-        </button>
+        {/* 2 Tabs: Upload Your Music vs Search Spotify */}
+        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-2xl border border-slate-800 shrink-0">
+          <button
+            type="button"
+            onClick={() => setMusicTab('custom')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              musicTab === 'custom'
+                ? 'bg-pink-500 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>🎵 Upload Music</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMusicTab('spotify')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              musicTab === 'spotify'
+                ? 'bg-emerald-500 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>🎧 Search Spotify</span>
+          </button>
+        </div>
       </div>
+
+      {/* 2. SPOTIFY MUSIC PICKER TAB */}
+      {musicTab === 'spotify' && (
+        <SpotifyMusicPicker onSwitchToUpload={() => setMusicTab('custom')} />
+      )}
+
+      {/* 3. CUSTOM MUSIC PLAYLIST TAB */}
+      {musicTab === 'custom' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-300">Custom Music Playlist ({tracks.length})</span>
+            <button
+              type="button"
+              onClick={() => setShowAddForm((prev) => !prev)}
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-xs font-extrabold text-white flex items-center gap-1 shadow-md hover:scale-105 transition-all cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>+ Add Custom Song</span>
+            </button>
+          </div>
 
       <input
         ref={fileInputRef}
@@ -282,6 +323,8 @@ export const AudioUploader: React.FC = () => {
           </div>
         ))}
       </div>
+        </div>
+      )}
     </div>
   );
 };
