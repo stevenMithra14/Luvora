@@ -35,6 +35,8 @@ export default function App() {
           </Route>
 
           {/* Standalone Recipient & Edit Routes */}
+          <Route path="/q/:public_id" element={<PublicGiftPage />} />
+          <Route path="/q/:publicId" element={<PublicGiftPage />} />
           <Route path="/g/:public_id" element={<PublicGiftPage />} />
           <Route path="/edit/:edit_token" element={<EditGiftPage />} />
         </Routes>

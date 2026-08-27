@@ -33,7 +33,7 @@ export const PublishSuccessModal: React.FC<PublishSuccessModalProps> = ({
     selectedOccasion.includes('valentine') ||
     selectedOccasion.includes('romantic');
 
-  const publicUrl = `${window.location.origin}/g/${publicId}`;
+  const publicUrl = `${window.location.origin}/q/${publicId}`;
   const editUrl = `${window.location.origin}/edit/${editToken}`;
 
   const handleCopyLink = () => {

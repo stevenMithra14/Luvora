@@ -6,17 +6,18 @@ import { fetchPublicGiftApi, PublicGiftResponse } from '../services/giftService'
 import { PublicGiftExperience } from '../components/recipient/PublicGiftExperience';
 
 export const PublicGiftPage: React.FC = () => {
-  const { public_id } = useParams<{ public_id: string }>();
+  const params = useParams<{ public_id?: string; publicId?: string }>();
+  const activePublicId = params.public_id || params.publicId;
 
   const [giftData, setGiftData] = useState<PublicGiftResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!public_id) return;
+    if (!activePublicId) return;
     let mounted = true;
 
-    fetchPublicGiftApi(public_id)
+    fetchPublicGiftApi(activePublicId)
       .then((data) => {
         if (!mounted) return;
         setGiftData(data);
@@ -31,7 +32,7 @@ export const PublicGiftPage: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [public_id]);
+  }, [activePublicId]);
 
   // STEP 1: Loading Animation
   if (loading) {

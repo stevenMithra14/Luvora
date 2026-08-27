@@ -177,7 +177,7 @@ export const EditGiftPage: React.FC = () => {
     );
   }
 
-  const publicUrl = `${window.location.origin}/g/${publishedGift.public_id}`;
+  const publicUrl = `${window.location.origin}/q/${publishedGift.public_id}`;
 
   return (
     <div className="min-h-[85vh] flex flex-col justify-between py-8 px-4 sm:px-6">
