@@ -155,6 +155,7 @@ class GiftBase(BaseModel):
 class GiftCreate(GiftBase):
     password: Optional[str] = Field(None, description="Optional access password for private gifts")
     password_hint: Optional[str] = Field(None, description="Optional password hint for recipient")
+    password_enabled: Optional[bool] = Field(None, description="Explicit control whether recipient view is locked by password")
     photos: List[GiftPhotoCreate] = Field(default_factory=list)
     sections: List[GiftSectionCreate] = Field(default_factory=list)
     interactives: List[GiftInteractiveCreate] = Field(default_factory=list)

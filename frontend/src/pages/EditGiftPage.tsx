@@ -391,13 +391,13 @@ export const EditGiftPage: React.FC = () => {
       </div>
 
       {/* Sticky Bottom Save Action Bar */}
-      <div className="sticky bottom-0 z-40 py-4 px-4 sm:px-10 bg-transparent pointer-events-none">
-        <div className="w-full flex items-center justify-between gap-4 pointer-events-auto">
+      <div className="sticky bottom-0 z-40 py-3 sm:py-4 px-4 sm:px-10 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800/80">
+        <div className="w-full max-w-7xl mx-auto flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
           <a
             href={publicUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-slate-800 bg-slate-900/90 text-sm font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all duration-200 shadow-lg backdrop-blur-md"
+            className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-5 py-3 rounded-full border border-slate-800 bg-slate-900/90 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:border-slate-700 transition-all duration-200 shadow-lg backdrop-blur-md"
           >
             <ExternalLink className="h-4 w-4" />
             <span>View Public Gift</span>
@@ -407,7 +407,7 @@ export const EditGiftPage: React.FC = () => {
             type="button"
             onClick={handleSaveChanges}
             disabled={isSaving}
-            className={`inline-flex items-center gap-2.5 px-9 py-3.5 rounded-full text-sm font-bold text-white transition-all duration-300 shadow-xl ${
+            className={`w-full sm:w-auto justify-center inline-flex items-center gap-2.5 px-9 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white transition-all duration-300 shadow-xl ${
               isSaving
                 ? 'bg-slate-800 opacity-70 cursor-wait'
                 : 'bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 shadow-pink-500/30 hover:shadow-pink-500/45 hover:scale-105 active:scale-95 cursor-pointer'

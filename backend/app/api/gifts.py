@@ -36,7 +36,8 @@ ALLOWED_INTERACTIVE_TYPES = {
     'quiz', 'birthday_quiz', 'love_quiz', 'know_me_quiz', 'best_friend_quiz', 'our_story_quiz',
     'memory_match', 'surprise_wheel', 'would_you_rather', 'this_or_that', 'who_said_it',
     'guess_age', 'mystery_box', 'countdown', 'timeline', 'secret_message', 'surprise_button',
-    'slideshow', 'final_message', 'photo_memories', 'video_memories', 'mixed_memories'
+    'slideshow', 'final_message', 'photo_memories', 'video_memories', 'mixed_memories',
+    'cake', 'love_lock', 'gift_box', 'candle'
 }
 
 # Whitelist of allowed digital goodie types
@@ -61,7 +62,7 @@ def create_published_gift(gift_in: GiftCreate, db: Session = Depends(get_db)):
     edit_token = generate_edit_token()
 
     hashed_pwd = hash_password(gift_in.password) if gift_in.password else None
-    has_pwd = bool(hashed_pwd)
+    has_pwd = gift_in.password_enabled if gift_in.password_enabled is not None else bool(hashed_pwd)
 
     gift = Gift(
         public_id=public_id,

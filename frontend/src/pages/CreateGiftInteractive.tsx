@@ -260,12 +260,12 @@ export const CreateGiftInteractive: React.FC = () => {
       </div>
 
       {/* Navigation Bar */}
-      <div className="sticky bottom-0 z-40 py-4 px-4 sm:px-10 bg-transparent pointer-events-none">
-        <div className="w-full flex items-center justify-between gap-4 pointer-events-auto">
+      <div className="sticky bottom-0 z-40 py-3 sm:py-4 px-4 sm:px-10 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800/80">
+        <div className="w-full max-w-7xl mx-auto flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
           <button
             type="button"
             onClick={handleBack}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-slate-800 bg-slate-900/90 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer shadow-lg backdrop-blur-md"
+            className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-5 py-3 rounded-full border border-slate-800 bg-slate-900/90 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer shadow-lg backdrop-blur-md"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Back</span>
@@ -274,7 +274,7 @@ export const CreateGiftInteractive: React.FC = () => {
           <button
             type="button"
             onClick={handleContinue}
-            className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-sm font-bold text-white bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-300"
+            className="w-full sm:w-auto justify-center inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-300"
           >
             <span>Continue to Preview</span>
             <ArrowRight className="h-4 w-4" />

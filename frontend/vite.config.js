@@ -25,5 +25,8 @@ export default defineConfig({
                 changeOrigin: true,
             }
         }
+    },
+    build: {
+        minify: 'esbuild'
     }
 });

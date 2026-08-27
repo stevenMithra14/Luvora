@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Sparkles } from 'lucide-react';
-import { PublicGiftResponse } from '../../services/giftService';
+import { PublicGiftResponse, verifyGiftPasswordApi, fetchUnlockedGiftApi } from '../../services/giftService';
 import { getThemeConfig } from '../../utils/themeSystem';
 import { GameRenderer } from '../games/GameRenderer';
 import { FinalMessage } from '../interactive/FinalMessage';
@@ -15,12 +15,26 @@ interface PublicGiftExperienceProps {
   gift: PublicGiftResponse;
 }
 
-export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift }) => {
+export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift: initialGift }) => {
+  const [giftData, setGiftData] = useState<PublicGiftResponse>(initialGift);
   // Sequential Stages: box -> cake -> intro -> games -> goodies -> memories -> final
   const [activeStage, setActiveStage] = useState<'box' | 'cake' | 'intro' | 'games' | 'goodies' | 'memories' | 'final'>('box');
-  const theme = getThemeConfig(gift.theme_id);
+  const theme = getThemeConfig(giftData.theme_id);
 
-  const handleBoxOpenComplete = () => {
+  const handleVerifyPassword = async (password: string) => {
+    const res = await verifyGiftPasswordApi(giftData.public_id, password);
+    return res;
+  };
+
+  const handleBoxOpenComplete = async (accessToken?: string) => {
+    if (accessToken && giftData.is_locked) {
+      try {
+        const unlockedData = await fetchUnlockedGiftApi(giftData.public_id, accessToken);
+        setGiftData(unlockedData);
+      } catch (e) {
+        console.error("Error fetching unlocked content:", e);
+      }
+    }
     setActiveStage('cake');
   };
 
@@ -28,13 +42,13 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
     setActiveStage('intro');
   };
 
-  const formattedPhotos = (gift.photos || []).map((p) => ({
+  const formattedPhotos = (giftData.photos || []).map((p) => ({
     id: p.id,
     fileUrl: p.file_url,
     caption: p.caption || '',
   }));
 
-  const formattedGoodies = (gift.goodies || []).map((g) => ({
+  const formattedGoodies = (giftData.goodies || []).map((g) => ({
     id: g.id,
     goodieType: g.goodie_type as any,
     title: g.title || '',
@@ -56,17 +70,17 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
     }
   };
 
-  const finalModule = (gift.interactives || []).find((i) => i.interactive_type === 'final_message');
-  const gamesAndSurprises = (gift.interactives || []).filter((i) => i.interactive_type !== 'final_message' && i.interactive_type !== 'slideshow');
+  const finalModule = (giftData.interactives || []).find((i) => i.interactive_type === 'final_message');
+  const gamesAndSurprises = (giftData.interactives || []).filter((i) => i.interactive_type !== 'final_message' && i.interactive_type !== 'slideshow');
 
-  const messageLines = (gift.message || '').split('\n').filter((l) => l.trim().length > 0);
+  const messageLines = (giftData.message || '').split('\n').filter((l) => l.trim().length > 0);
 
   return (
     <div className={`min-h-screen w-full transition-colors duration-700 selection:bg-pink-500/30 ${theme.background} text-slate-100 font-sans relative overflow-x-hidden max-w-full`}>
       {/* Corner Cassette & Vinyl Music Player with Album Cover Artwork */}
-      {gift.music_url && activeStage !== 'box' && (
+      {giftData.music_url && activeStage !== 'box' && (
         <FloatingCassettePlayer
-          singleMusicUrl={gift.music_url}
+          singleMusicUrl={giftData.music_url}
           autoStart={true}
         />
       )}
@@ -83,9 +97,10 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
             className="min-h-screen flex flex-col items-center justify-center p-4"
           >
             <GiftBoxUnboxing
-              recipientName={gift.recipient_name}
-              password={(gift as any).password}
-              passwordHint={(gift as any).password_hint || (gift as any).passwordHint}
+              recipientName={giftData.recipient_name}
+              isPasswordProtected={giftData.password_enabled || giftData.is_locked}
+              passwordHint={giftData.password_hint}
+              onVerifyPassword={handleVerifyPassword}
               onOpenComplete={handleBoxOpenComplete}
             />
           </motion.div>
@@ -102,7 +117,7 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
             className="min-h-screen flex flex-col items-center justify-center p-4"
           >
             <CakeStage
-              recipientName={gift.recipient_name}
+              recipientName={giftData.recipient_name}
               onCakeComplete={handleCakeComplete}
             />
           </motion.div>
@@ -128,7 +143,7 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
             </span>
 
             <h1 className="font-heading text-3xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight break-words">
-              Happy {gift.occasion_type || 'Special Day'}, {gift.recipient_name} ❤️
+              Happy {giftData.occasion_type || 'Special Day'}, {giftData.recipient_name} ❤️
             </h1>
 
             <p className="text-base sm:text-xl text-slate-300 font-serif italic">
@@ -177,8 +192,8 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
                   interactiveType={item.interactive_type}
                   configJson={item.configuration_json || {}}
                   photos={formattedPhotos}
-                  recipientName={gift.recipient_name}
-                  recipientDate={gift.recipient_date}
+                  recipientName={giftData.recipient_name}
+                  recipientDate={giftData.recipient_date}
                 />
               </div>
             ))}
@@ -206,7 +221,7 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
           >
             <GoodiesExperience
               goodies={formattedGoodies}
-              recipientName={gift.recipient_name}
+              recipientName={giftData.recipient_name}
               onGoodiesComplete={() => setActiveStage('memories')}
             />
           </motion.div>
@@ -223,7 +238,7 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
           >
             <MemoriesExperience
               photosFallback={formattedPhotos}
-              recipientName={gift.recipient_name}
+              recipientName={giftData.recipient_name}
               onMemoriesComplete={() => setActiveStage('final')}
             />
           </motion.div>
@@ -240,7 +255,7 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
             {finalModule ? (
               <FinalMessage
                 finalText={finalModule.configuration_json?.message}
-                senderName={`Made with love for ${gift.recipient_name} ❤️`}
+                senderName={`Made with love for ${giftData.recipient_name} ❤️`}
               />
             ) : (
               <div className="text-center py-12 border-t border-white/10 space-y-4">

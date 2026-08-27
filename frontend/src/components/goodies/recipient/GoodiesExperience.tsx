@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Play, Pause, MapPin, CheckCircle, ArrowLeft, Compass, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { WizardGoodie } from '../../../context/WizardContext';
+import { resolveMediaUrl } from '../../../services/giftService';
 
 interface GoodiesExperienceProps {
   goodies: WizardGoodie[];
@@ -15,7 +16,7 @@ const getPlayableAudioUrl = (rawUrl?: string, fallbackUrl: string = 'https://www
   if (!trimmed || trimmed.includes('spotify.com') || trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
     return fallbackUrl;
   }
-  return trimmed;
+  return resolveMediaUrl(trimmed, fallbackUrl);
 };
 
 const getSpotifyEmbedUrl = (rawUrl?: string) => {
@@ -416,13 +417,13 @@ export const GoodiesExperience: React.FC<GoodiesExperienceProps> = ({
       {/* IMMERSIVE GOODIE MODAL OPENING VIEW */}
       <AnimatePresence>
         {activeGoodie && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/90 backdrop-blur-xl overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 30 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="w-full max-w-2xl bg-[#faf3e0] border-4 border-[#b89b72]/80 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 my-8 text-[#3e2723] relative overflow-hidden max-h-[90vh] overflow-y-auto font-serif select-none"
+              className="w-full max-w-2xl bg-[#faf3e0] border-4 border-[#b89b72]/80 rounded-3xl p-4 sm:p-8 shadow-2xl space-y-5 sm:space-y-6 my-4 sm:my-8 text-[#3e2723] relative overflow-hidden max-h-[88vh] overflow-y-auto font-serif select-none max-w-[calc(100vw-1.5rem)]"
             >
               {/* Coffee Stain Ring & Splatter Graphic Overlays */}
               <svg className="absolute -top-10 -left-10 w-48 h-48 pointer-events-none opacity-20 text-[#6d4c2b]" viewBox="0 0 100 100" fill="none">
@@ -483,7 +484,7 @@ export const GoodiesExperience: React.FC<GoodiesExperienceProps> = ({
                   <div className="p-4 pt-6 pb-8 rounded-3xl bg-white text-slate-950 shadow-2xl max-w-md mx-auto space-y-4">
                     <div className="rounded-2xl overflow-hidden bg-slate-950 max-h-72 aspect-[4/3]">
                       <img
-                        src={activeGoodie.mediaUrl || activeGoodie.configurationJson?.photoUrl}
+                        src={resolveMediaUrl(activeGoodie.mediaUrl || activeGoodie.configurationJson?.photoUrl)}
                         alt="Memory"
                         className="w-full h-full object-cover"
                       />

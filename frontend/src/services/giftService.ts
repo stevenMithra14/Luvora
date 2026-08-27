@@ -145,6 +145,17 @@ const sanitizeRecipientDate = (val?: string): string | null => {
   return null;
 };
 
+export const resolveMediaUrl = (rawUrl?: string, fallbackUrl: string = ''): string => {
+  if (!rawUrl || typeof rawUrl !== 'string') return fallbackUrl;
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return fallbackUrl;
+  if (trimmed.startsWith('/uploads/')) {
+    const backendOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
+    return `${backendOrigin}${trimmed}`;
+  }
+  return trimmed;
+};
+
 export async function publishGiftApi(data: WizardData): Promise<PublishedGiftResponse> {
   const payload = {
     occasion_type: data.occasion || 'general',
@@ -156,6 +167,7 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
     music_url: data.musicUrl || null,
     password: data.password && data.password.trim() ? data.password.trim() : null,
     password_hint: data.passwordHint && data.passwordHint.trim() ? data.passwordHint.trim() : null,
+    password_enabled: (data as any).password_enabled ?? false,
     is_published: true,
     photos: data.photos.map((p, idx) => ({
       file_url: p.fileUrl,

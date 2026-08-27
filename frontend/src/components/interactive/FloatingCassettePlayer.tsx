@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, SkipForward, SkipBack, Disc, Volume2, VolumeX } from 'lucide-react';
 import { MusicTrack } from '../../context/WizardContext';
+import { resolveMediaUrl } from '../../services/giftService';
 
 interface FloatingCassettePlayerProps {
   tracks?: MusicTrack[];
@@ -17,12 +18,7 @@ const getPlayableAudioUrl = (rawUrl?: string) => {
   if (!trimmed || trimmed.includes('spotify.com') || trimmed.includes('youtube.com')) {
     return 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
   }
-  if (trimmed.startsWith('/uploads')) {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
-    const backendOrigin = apiBase.replace(/\/api\/?$/, '');
-    return `${backendOrigin}${trimmed}`;
-  }
-  return trimmed;
+  return resolveMediaUrl(trimmed, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
 };
 
 export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({

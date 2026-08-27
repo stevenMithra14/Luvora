@@ -58,16 +58,16 @@ async def custom_global_exception_handler(request: Request, exc: Exception):
     )
 
 # Configure CORS
-cors_origins_raw = os.getenv("CORS_ORIGINS", '["http://localhost:5173","http://127.0.0.1:5173"]')
+cors_origins_raw = os.getenv("CORS_ORIGINS", '["*"]')
 try:
     origins = json.loads(cors_origins_raw)
 except Exception:
-    origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=origins if "*" not in origins else ["*"],
+    allow_credentials=True if "*" not in origins else False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

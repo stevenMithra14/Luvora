@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Heart, Lock, Key, ShieldAlert, X } from 'lucide-react';
+import { Sparkles, Heart, Lock, Key, ShieldAlert } from 'lucide-react';
 import { GiftBoxConfig } from '../../context/WizardContext';
 
 interface GiftBoxUnboxingProps {
@@ -8,7 +8,9 @@ interface GiftBoxUnboxingProps {
   recipientName?: string;
   password?: string;
   passwordHint?: string;
-  onOpenComplete: () => void;
+  isPasswordProtected?: boolean;
+  onVerifyPassword?: (password: string) => Promise<{ verified: boolean; access_token?: string }>;
+  onOpenComplete: (accessToken?: string) => void;
 }
 
 export const GiftBoxUnboxing: React.FC<GiftBoxUnboxingProps> = ({
@@ -16,19 +18,27 @@ export const GiftBoxUnboxing: React.FC<GiftBoxUnboxingProps> = ({
   recipientName = 'Someone Special',
   password,
   passwordHint,
+  isPasswordProtected: externalIsProtected,
+  onVerifyPassword,
   onOpenComplete,
 }) => {
   const [isOpenAnimationStarted, setIsOpenAnimationStarted] = useState(false);
   const [boxTiltX, setBoxTiltX] = useState(0);
   const [boxTiltY, setBoxTiltY] = useState(0);
 
-  // Password Gate Modal States
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  // Inline Password Gate States
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | undefined>(undefined);
+  const passwordInputRef = useRef<HTMLInputElement | null>(null);
 
-  const isPasswordProtected = Boolean(password && typeof password === 'string' && password.trim().length > 0);
+  const isPasswordProtected = externalIsProtected ?? Boolean(password && typeof password === 'string' && password.trim().length > 0);
   const [isUnlocked, setIsUnlocked] = useState(!isPasswordProtected);
+
+  useEffect(() => {
+    setIsUnlocked(!isPasswordProtected);
+  }, [isPasswordProtected, password]);
 
   const boxBgColor = config?.boxColor || '#1d141e';
   const ribbonColor = config?.ribbonColor || '#ec4899';
@@ -66,42 +76,66 @@ export const GiftBoxUnboxing: React.FC<GiftBoxUnboxingProps> = ({
     setBoxTiltY(0);
   };
 
-  const handleOpenClick = () => {
-    if (isOpenAnimationStarted) return;
-
-    if (isPasswordProtected && !isUnlocked) {
-      setShowPasswordModal(true);
-      setPasswordError('');
-      return;
-    }
-
-    triggerUnboxing();
-  };
-
-  const triggerUnboxing = () => {
+  const triggerUnboxing = (token?: string) => {
     setIsOpenAnimationStarted(true);
+    const activeToken = token || accessToken;
     setTimeout(() => {
-      onOpenComplete();
+      onOpenComplete(activeToken);
     }, 1200);
   };
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePasswordSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setPasswordError('');
 
-    if (!passwordInput || !passwordInput.trim()) {
-      setPasswordError('Please enter password');
+    const trimmedInput = passwordInput.trim();
+    if (!trimmedInput) {
+      setPasswordError('Please enter the access password.');
+      passwordInputRef.current?.focus();
       return;
     }
 
-    if (passwordInput.trim() === password?.trim()) {
+    if (onVerifyPassword) {
+      setIsVerifying(true);
+      try {
+        const res = await onVerifyPassword(trimmedInput);
+        if (res.verified && res.access_token) {
+          setAccessToken(res.access_token);
+          setIsUnlocked(true);
+          triggerUnboxing(res.access_token);
+        }
+      } catch (err: any) {
+        const hint = getHintText();
+        const msg = err.message || 'Incorrect password.';
+        setPasswordError(`${msg} ${hint ? `Hint: ${hint}` : ''}`);
+      } finally {
+        setIsVerifying(false);
+      }
+      return;
+    }
+
+    if (password && trimmedInput === password.trim()) {
       setIsUnlocked(true);
-      setShowPasswordModal(false);
       triggerUnboxing();
     } else {
       const hint = getHintText();
       setPasswordError(`Incorrect password. ${hint ? `Hint: ${hint}` : 'Please try again.'}`);
     }
+  };
+
+  const handleOpenClick = () => {
+    if (isOpenAnimationStarted) return;
+
+    if (isPasswordProtected && !isUnlocked) {
+      if (passwordInput.trim()) {
+        handlePasswordSubmit();
+      } else {
+        passwordInputRef.current?.focus();
+      }
+      return;
+    }
+
+    triggerUnboxing();
   };
 
   const getRibbonExtraStyles = () => {
@@ -121,25 +155,29 @@ export const GiftBoxUnboxing: React.FC<GiftBoxUnboxingProps> = ({
   };
 
   return (
-    <div className="w-full max-w-full flex flex-col items-center justify-center p-2 sm:p-4 text-center select-none relative overflow-hidden bg-[#0a0a0f] rounded-2xl border border-slate-800 shadow-2xl">
+    <div className="w-full flex flex-col items-center justify-center space-y-6">
       <AnimatePresence mode="wait">
         {!isOpenAnimationStarted ? (
           <motion.div
-            key="gift-box-closed"
+            key="gift-box-idle"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)' }}
+            exit={{ opacity: 0, scale: 0.8, rotate: -5 }}
             transition={{ duration: 0.5 }}
-            className="flex flex-col items-center justify-center space-y-2 sm:space-y-4 max-w-full mx-auto py-1"
+            className="flex flex-col items-center justify-center space-y-6 max-w-full text-center"
           >
-            {/* Header Title & Subtitle */}
-            <div className="space-y-1 w-full max-w-full px-1">
-              <h2 className="font-serif italic text-base sm:text-2xl text-pink-200 font-normal tracking-tight drop-shadow-md leading-tight break-words max-w-full">
-                you've got a gift box
+            {/* Header Greeting */}
+            <div className="space-y-1.5 max-w-md">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-full bg-pink-500/10 text-pink-300 border border-pink-500/20">
+                <Sparkles className="h-3.5 w-3.5 text-pink-400" />
+                Digital Surprise Box
+              </span>
+              <h2 className="font-heading text-xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {recipientName}, you've got a gift box ❤️
               </h2>
-              <p className="text-[10px] sm:text-xs text-slate-400 font-mono tracking-tight px-1 break-words">
+              <p className="text-xs sm:text-sm text-slate-400 font-serif italic px-1">
                 {isPasswordProtected && !isUnlocked
-                  ? '🔒 Password Protected Gift • Tap box to enter password'
+                  ? 'Enter password below to unwrap your gift'
                   : openingMessage}
               </p>
             </div>
@@ -233,16 +271,61 @@ export const GiftBoxUnboxing: React.FC<GiftBoxUnboxingProps> = ({
               </motion.button>
             </div>
 
-            {/* Action Subtext below box */}
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={handleOpenClick}
-                className="font-mono text-sm sm:text-base text-pink-300 tracking-widest lowercase hover:text-white transition-colors cursor-pointer animate-pulse"
+            {/* INLINE PASSWORD ENTRY FORM WHILE UNWRAPPING GIFT BOX */}
+            {isPasswordProtected && !isUnlocked ? (
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-sm p-5 sm:p-6 rounded-3xl bg-slate-900/90 border border-pink-500/30 shadow-2xl backdrop-blur-xl space-y-4 text-center"
               >
-                {isPasswordProtected && !isUnlocked ? '🔒 enter password to unlock ✨' : 'tap box to open ✨'}
-              </button>
-            </div>
+                {/* Password Hint Card */}
+                {getHintText() && (
+                  <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/30 text-xs text-pink-200 flex items-center justify-center gap-2 font-mono">
+                    <Key className="h-4 w-4 text-amber-400 shrink-0" />
+                    <span><strong className="text-amber-300">Hint:</strong> {getHintText()}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handlePasswordSubmit} className="space-y-3">
+                  <div className="space-y-2">
+                    <input
+                      ref={passwordInputRef}
+                      type="password"
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      placeholder="Enter password to unwrap..."
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-pink-500 text-center tracking-widest font-mono shadow-inner"
+                    />
+
+                    {passwordError && (
+                      <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 flex items-center justify-center gap-1.5 font-medium">
+                        <ShieldAlert className="h-4 w-4 text-rose-400 shrink-0" />
+                        <span>{passwordError}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isVerifying}
+                    className="w-full py-3.5 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 font-extrabold text-xs text-white shadow-xl shadow-pink-500/30 hover:scale-105 active:scale-95 transition-all cursor-pointer uppercase tracking-wider disabled:opacity-50"
+                  >
+                    {isVerifying ? 'Verifying...' : 'UNWRAP GIFT BOX 🎁'}
+                  </button>
+                </form>
+              </motion.div>
+            ) : (
+              /* Action Subtext when not password protected or already unlocked */
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={handleOpenClick}
+                  className="font-mono text-sm sm:text-base text-pink-300 tracking-widest lowercase hover:text-white transition-colors cursor-pointer animate-pulse"
+                >
+                  tap box to open ✨
+                </button>
+              </div>
+            )}
           </motion.div>
         ) : (
           <motion.div
@@ -259,85 +342,6 @@ export const GiftBoxUnboxing: React.FC<GiftBoxUnboxingProps> = ({
               Unwrapping your gift for {recipientName}... ❤️
             </h3>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* PASSWORD GATE MODAL BEFORE OPENING GIFT BOX */}
-      <AnimatePresence>
-        {showPasswordModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-full max-w-md p-6 sm:p-8 rounded-3xl bg-slate-900 border border-pink-500/40 shadow-2xl text-center space-y-5 text-white relative"
-            >
-              <button
-                type="button"
-                onClick={() => setShowPasswordModal(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-950 border border-slate-800 text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X className="h-4 w-4" />
-              </button>
-
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30">
-                <Lock className="h-7 w-7" />
-              </div>
-
-              <div className="space-y-1">
-                <h3 className="font-heading text-xl font-extrabold text-white">
-                  Enter Password to Unlock Gift
-                </h3>
-                <p className="text-xs text-slate-300">
-                  This digital surprise for <span className="text-pink-300 font-bold">{recipientName}</span> is protected.
-                </p>
-              </div>
-
-              {/* Password Hint Card */}
-              {getHintText() && (
-                <div className="p-3.5 rounded-2xl bg-pink-500/10 border border-pink-500/30 text-xs text-pink-200 flex items-center justify-center gap-2 font-mono">
-                  <Key className="h-4 w-4 text-pink-400 shrink-0" />
-                  <span><strong className="text-amber-300">Password Hint:</strong> {getHintText()}</span>
-                </div>
-              )}
-
-              <form onSubmit={handlePasswordSubmit} className="space-y-4 pt-1">
-                <div className="space-y-2">
-                  <input
-                    type="password"
-                    value={passwordInput}
-                    onChange={(e) => setPasswordInput(e.target.value)}
-                    placeholder="Enter password..."
-                    autoFocus
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-pink-500 text-center tracking-widest font-mono"
-                  />
-
-                  {passwordError && (
-                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 flex items-center justify-center gap-1.5 font-medium">
-                      <ShieldAlert className="h-4 w-4 text-rose-400 shrink-0" />
-                      <span>{passwordError}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3 pt-1">
-                  <button
-                    type="submit"
-                    className="flex-1 py-3.5 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 font-extrabold text-xs text-white shadow-xl shadow-pink-500/30 hover:scale-105 active:scale-95 transition-all cursor-pointer uppercase tracking-wider"
-                  >
-                    Unlock & Open Gift 🎁
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswordModal(false)}
-                    className="px-5 py-3.5 rounded-full bg-slate-950 border border-slate-800 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
         )}
       </AnimatePresence>
     </div>

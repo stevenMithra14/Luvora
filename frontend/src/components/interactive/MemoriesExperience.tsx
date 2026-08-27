@@ -18,6 +18,7 @@ import {
   Camera
 } from 'lucide-react';
 import { WizardMemoryItem, MemoryConfig } from '../../context/WizardContext';
+import { resolveMediaUrl } from '../../services/giftService';
 
 const getYouTubeEmbedUrl = (rawUrl?: string) => {
   if (!rawUrl || typeof rawUrl !== 'string') return null;
@@ -45,12 +46,7 @@ const getPlayableVideoUrl = (rawUrl?: string) => {
   if (!trimmed) {
     return 'https://vjs.zencdn.net/v/oceans.mp4';
   }
-  if (trimmed.startsWith('/uploads')) {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
-    const backendOrigin = apiBase.replace(/\/api\/?$/, '');
-    return `${backendOrigin}${trimmed}`;
-  }
-  return trimmed;
+  return resolveMediaUrl(trimmed, 'https://vjs.zencdn.net/v/oceans.mp4');
 };
 
 interface MemoriesExperienceProps {
@@ -234,7 +230,7 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
 
         <div className="relative p-3 rounded-3xl bg-white shadow-2xl border border-slate-200 text-slate-950 font-sans z-10">
           <div className="relative overflow-hidden rounded-2xl bg-slate-950 h-64 aspect-[3/4] group cursor-pointer" onClick={() => setZoomedPhoto(item)}>
-            <img src={item.fileUrl} alt={item.caption || 'Portrait Layer'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <img src={resolveMediaUrl(item.fileUrl)} alt={item.caption || 'Portrait Layer'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
             <div className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity">
               <ZoomIn className="h-4 w-4" />
             </div>
@@ -262,7 +258,7 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
         return (
           <div className="p-3 pt-4 pb-5 rounded-2xl bg-white shadow-2xl border border-slate-200 text-slate-950 max-w-sm mx-auto font-sans">
             <div className="relative overflow-hidden rounded-lg bg-slate-950 max-h-[220px] sm:max-h-[250px] aspect-[4/3] group cursor-pointer" onClick={() => setZoomedPhoto(item)}>
-              <img src={item.fileUrl} alt={item.caption || 'Memory Photo'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              <img src={resolveMediaUrl(item.fileUrl)} alt={item.caption || 'Memory Photo'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
               <div className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity">
                 <ZoomIn className="h-4 w-4" />
               </div>
@@ -286,7 +282,7 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
         return (
           <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-700 shadow-2xl max-w-sm mx-auto space-y-2">
             <div className="relative overflow-hidden rounded-xl border border-white/20 max-h-[220px] sm:max-h-[250px] aspect-[4/3] cursor-pointer group" onClick={() => setZoomedPhoto(item)}>
-              <img src={item.fileUrl} alt={item.caption || 'Classic Photo'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              <img src={resolveMediaUrl(item.fileUrl)} alt={item.caption || 'Classic Photo'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
             </div>
             {item.caption && (
               <p className="text-center font-serif text-xs text-slate-200 italic line-clamp-2">
