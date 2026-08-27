@@ -4,9 +4,9 @@ from app.models.gift import GiftTheme
 
 DEFAULT_THEMES = [
     {
-        "id": "theme-romantic-blush",
+        "id": "theme-romantic",
         "name": "Romantic Blush",
-        "description": "Soft rose gold, delicate floating hearts, and elegant calligraphy for love letters and anniversaries.",
+        "description": "Soft rose gold, crimson accents, serif typography, and floating heart feelings.",
         "configuration_json": {
             "primaryColor": "#ec4899",
             "secondaryColor": "#f43f5e",
@@ -20,9 +20,9 @@ DEFAULT_THEMES = [
         "is_active": True
     },
     {
-        "id": "theme-midnight-stars",
+        "id": "theme-midnight",
         "name": "Midnight Stars",
-        "description": "Deep cosmic blue, glowing stardust particles, and dreamlike animations for special memories.",
+        "description": "Deep cosmic indigo, glowing violet stardust, and dreamlike atmosphere.",
         "configuration_json": {
             "primaryColor": "#8b5cf6",
             "secondaryColor": "#6366f1",
@@ -36,9 +36,9 @@ DEFAULT_THEMES = [
         "is_active": True
     },
     {
-        "id": "theme-birthday-glow",
-        "name": "Birthday Glow",
-        "description": "Vibrant confetti, celebratory sparkle, and warm festive vibes for unforgettable birthdays.",
+        "id": "theme-sunset",
+        "name": "Sunset Glow",
+        "description": "Warm amber, golden coral hues, and elegant nostalgic twilight vibes.",
         "configuration_json": {
             "primaryColor": "#f59e0b",
             "secondaryColor": "#ef4444",
@@ -46,24 +46,88 @@ DEFAULT_THEMES = [
             "textColor": "#fffbeb",
             "fontHeading": "Playfair Display",
             "fontBody": "Plus Jakarta Sans",
+            "particles": "sun"
+        },
+        "preview_image": "/assets/themes/sunset-glow.jpg",
+        "is_active": True
+    },
+    {
+        "id": "theme-dreamy",
+        "name": "Dreamy Lavender",
+        "description": "Soft pastel purple, ethereal cyan highlights, and gentle floating rhythm.",
+        "configuration_json": {
+            "primaryColor": "#c084fc",
+            "secondaryColor": "#e879f9",
+            "backgroundColor": "#14091f",
+            "textColor": "#faf5ff",
+            "fontHeading": "Playfair Display",
+            "fontBody": "Plus Jakarta Sans",
+            "particles": "sparkles"
+        },
+        "preview_image": "/assets/themes/dreamy-lavender.jpg",
+        "is_active": True
+    },
+    {
+        "id": "theme-minimal",
+        "name": "Minimal Obsidian",
+        "description": "Sleek dark monochrome, emerald accents, and clean modern lines.",
+        "configuration_json": {
+            "primaryColor": "#10b981",
+            "secondaryColor": "#059669",
+            "backgroundColor": "#090d16",
+            "textColor": "#f8fafc",
+            "fontHeading": "Plus Jakarta Sans",
+            "fontBody": "Plus Jakarta Sans",
+            "particles": "none"
+        },
+        "preview_image": "/assets/themes/minimal-obsidian.jpg",
+        "is_active": True
+    },
+    {
+        "id": "theme-celebration",
+        "name": "Party Celebration",
+        "description": "Vibrant celebratory sparkles, festive magenta, and joyful energy.",
+        "configuration_json": {
+            "primaryColor": "#f43f5e",
+            "secondaryColor": "#ec4899",
+            "backgroundColor": "#190914",
+            "textColor": "#fff1f2",
+            "fontHeading": "Playfair Display",
+            "fontBody": "Plus Jakarta Sans",
             "particles": "confetti"
         },
+        "preview_image": "/assets/themes/party-celebration.jpg",
+        "is_active": True
+    },
+    {
+        "id": "theme-romantic-blush",
+        "name": "Romantic Blush (Legacy)",
+        "description": "Soft rose gold, delicate floating hearts, and elegant calligraphy.",
+        "configuration_json": {"primaryColor": "#ec4899"},
+        "preview_image": "/assets/themes/romantic-blush.jpg",
+        "is_active": True
+    },
+    {
+        "id": "theme-midnight-stars",
+        "name": "Midnight Stars (Legacy)",
+        "description": "Deep cosmic blue, glowing stardust particles.",
+        "configuration_json": {"primaryColor": "#8b5cf6"},
+        "preview_image": "/assets/themes/midnight-stars.jpg",
+        "is_active": True
+    },
+    {
+        "id": "theme-birthday-glow",
+        "name": "Birthday Glow (Legacy)",
+        "description": "Vibrant confetti, celebratory sparkle.",
+        "configuration_json": {"primaryColor": "#f59e0b"},
         "preview_image": "/assets/themes/birthday-glow.jpg",
         "is_active": True
     },
     {
         "id": "theme-vintage-parchment",
-        "name": "Vintage Parchment",
-        "description": "Classic warm paper textures, antique typography, and nostalgic vibes for timeless friendship gifts.",
-        "configuration_json": {
-            "primaryColor": "#d97706",
-            "secondaryColor": "#b45309",
-            "backgroundColor": "#1c1917",
-            "textColor": "#fef3c7",
-            "fontHeading": "Playfair Display",
-            "fontBody": "Plus Jakarta Sans",
-            "particles": "dust"
-        },
+        "name": "Vintage Parchment (Legacy)",
+        "description": "Classic warm paper textures.",
+        "configuration_json": {"primaryColor": "#d97706"},
         "preview_image": "/assets/themes/vintage-parchment.jpg",
         "is_active": True
     }

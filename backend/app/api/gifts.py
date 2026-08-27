@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.gift import Gift, GiftPhoto, GiftSection, GiftInteractive, GiftGoodie
+from app.models.gift import Gift, GiftPhoto, GiftSection, GiftInteractive, GiftGoodie, GiftTheme
 from app.schemas.gift import (
     GiftCreate,
     GiftUpdate,
@@ -64,6 +64,20 @@ def create_published_gift(gift_in: GiftCreate, db: Session = Depends(get_db)):
     hashed_pwd = hash_password(gift_in.password) if gift_in.password else None
     has_pwd = gift_in.password_enabled if gift_in.password_enabled is not None else bool(hashed_pwd)
 
+    # Ensure theme_id exists in gift_themes table to prevent ForeignKeyViolation
+    target_theme_id = gift_in.theme_id or "theme-romantic"
+    existing_theme = db.query(GiftTheme).filter(GiftTheme.id == target_theme_id).first()
+    if not existing_theme:
+        new_theme = GiftTheme(
+            id=target_theme_id,
+            name=target_theme_id.replace("theme-", "").replace("-", " ").title(),
+            description="Auto-created theme",
+            configuration_json={},
+            is_active=True
+        )
+        db.add(new_theme)
+        db.flush()
+
     gift = Gift(
         public_id=public_id,
         edit_token=edit_token,
@@ -72,7 +86,7 @@ def create_published_gift(gift_in: GiftCreate, db: Session = Depends(get_db)):
         recipient_date=gift_in.recipient_date,
         title=gift_in.title,
         message=gift_in.message,
-        theme_id=gift_in.theme_id,
+        theme_id=target_theme_id,
         music_url=gift_in.music_url,
         password_hash=hashed_pwd,
         password_hint=gift_in.password_hint,
@@ -290,6 +304,17 @@ def update_gift_by_edit_token(
     if gift_update.occasion_type is not None:
         gift.occasion_type = gift_update.occasion_type
     if gift_update.theme_id is not None:
+        existing_theme = db.query(GiftTheme).filter(GiftTheme.id == gift_update.theme_id).first()
+        if not existing_theme:
+            new_theme = GiftTheme(
+                id=gift_update.theme_id,
+                name=gift_update.theme_id.replace("theme-", "").replace("-", " ").title(),
+                description="Auto-created theme",
+                configuration_json={},
+                is_active=True
+            )
+            db.add(new_theme)
+            db.flush()
         gift.theme_id = gift_update.theme_id
     if gift_update.music_url is not None:
         gift.music_url = gift_update.music_url
