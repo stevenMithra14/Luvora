@@ -11,10 +11,14 @@ import {
   Calendar,
   MapPin,
   Clock,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Play,
+  X,
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import { useWizard, WizardMemoryItem } from '../../../context/WizardContext';
-import { uploadPhotoApi, uploadVideoApi, resolveMediaUrl } from '../../../services/giftService';
+import { uploadPhotoApi, resolveMediaUrl, parseYouTubeVideoId, getYouTubeThumbnailUrl } from '../../../services/giftService';
 
 export const MemoryEditor: React.FC = () => {
   const { data, setMemories, setPhotos, setMemoryConfig } = useWizard();
@@ -23,17 +27,16 @@ export const MemoryEditor: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'items' | 'settings'>('items');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Link inputs for Photos and Videos
-  const [showUrlForm, setShowUrlForm] = useState(false);
-  const [mediaUrlInput, setMediaUrlInput] = useState('');
-  const [mediaTypeInput, setMediaTypeInput] = useState<'photo' | 'video'>('photo');
-  const [mediaTitleInput, setMediaTitleInput] = useState('');
-  const [mediaCaptionInput, setMediaCaptionInput] = useState('');
+  // Video Link Modal State
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoUrlInput, setVideoUrlInput] = useState('');
+  const [videoTitleInput, setVideoTitleInput] = useState('');
+  const [videoCaptionInput, setVideoCaptionInput] = useState('');
+  const [videoModalError, setVideoModalError] = useState<string | null>(null);
 
-  // Handle Photo Upload
+  // Handle Photo Upload (Keep exact photo upload functionality)
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -91,82 +94,55 @@ export const MemoryEditor: React.FC = () => {
     }
   };
 
-  // Handle Video Upload
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  // Handle Video Link Submission
+  const handleAddVideoLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    setVideoModalError(null);
+    const trimmedUrl = videoUrlInput.trim();
+
+    if (!trimmedUrl) {
+      setVideoModalError('Please enter a valid video link.');
+      return;
+    }
 
     if (memories.length >= 10) {
-      setUploadError('Maximum limit of 10 media items reached (photos + videos). Remove a memory to upload more.');
+      setVideoModalError('Maximum limit of 10 media items reached (photos + videos). Remove a memory to add more.');
       return;
     }
 
-    setIsUploadingVideo(true);
-    setUploadError(null);
+    const ytId = parseYouTubeVideoId(trimmedUrl);
+    const vimeoMatch = trimmedUrl.match(/vimeo\.com\/(?:video\/)?([0-9]+)/);
+    const isDirectMp4 = trimmedUrl.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i);
 
-    try {
-      const newMemories: WizardMemoryItem[] = [];
-      const slotsRemaining = 10 - memories.length;
-      const countToUpload = Math.min(files.length, slotsRemaining);
-
-      for (let i = 0; i < countToUpload; i++) {
-        const file = files[i];
-        if (file.size > 100 * 1024 * 1024) {
-          setUploadError(`Video file '${file.name}' exceeds 100MB limit.`);
-          continue;
-        }
-
-        const res = await uploadVideoApi(file);
-        const returnedUrl = res.url;
-        const memoryId = `mem-vid-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
-
-        newMemories.push({
-          id: memoryId,
-          type: 'video',
-          fileUrl: returnedUrl,
-          title: file.name.split('.')[0] || 'Video Memory',
-          caption: '',
-          date: '',
-          frameStyle: memoryConfig.videoFrameStyle || 'cinema',
-          displayOrder: memories.length + i,
-        });
-      }
-
-      setMemories([...memories, ...newMemories]);
-    } catch (err: any) {
-      setUploadError(err?.message || 'Failed to upload video. Please try again.');
-    } finally {
-      setIsUploadingVideo(false);
-      e.target.value = '';
-    }
-  };
-
-  // Handle Direct Link Media Add
-  const handleAddMediaByUrl = (e: React.FormEvent) => {
-    e.preventDefault();
-    setUploadError(null);
-    const trimmed = mediaUrlInput.trim();
-    if (!trimmed) {
-      setUploadError('Please enter a valid media URL.');
+    if (!ytId && !vimeoMatch && !isDirectMp4) {
+      setVideoModalError('Please enter a valid video link (e.g. https://youtu.be/your-video).');
       return;
     }
 
-    const newMemory: WizardMemoryItem = {
-      id: `mem-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      type: mediaTypeInput,
-      fileUrl: trimmed,
-      title: mediaTitleInput.trim() || (mediaTypeInput === 'video' ? 'Linked Video Memory' : 'Linked Photo Memory'),
-      caption: mediaCaptionInput.trim() || '',
+    const thumbnailUrl = ytId
+      ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+      : 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=400&q=80';
+
+    const newVideoMemory: WizardMemoryItem = {
+      id: `mem-vid-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      type: 'video',
+      source: ytId ? 'youtube' : 'video_link',
+      fileUrl: trimmedUrl,
+      videoUrl: trimmedUrl,
+      videoId: ytId || undefined,
+      thumbnailUrl: thumbnailUrl,
+      title: videoTitleInput.trim() || (ytId ? 'YouTube Video Memory' : 'Video Memory'),
+      caption: videoCaptionInput.trim() || '',
       date: '',
-      frameStyle: mediaTypeInput === 'video' ? (memoryConfig.videoFrameStyle || 'cinema') : (memoryConfig.frameStyle || 'polaroid'),
+      frameStyle: memoryConfig.videoFrameStyle || 'cinema',
       displayOrder: memories.length,
     };
 
-    setMemories([...memories, newMemory]);
-    setMediaUrlInput('');
-    setMediaTitleInput('');
-    setMediaCaptionInput('');
-    setShowUrlForm(false);
+    setMemories([...memories, newVideoMemory]);
+    setVideoUrlInput('');
+    setVideoTitleInput('');
+    setVideoCaptionInput('');
+    setShowVideoModal(false);
   };
 
   const handleUpdateItem = (id: string, updates: Partial<WizardMemoryItem>) => {
@@ -247,213 +223,258 @@ export const MemoryEditor: React.FC = () => {
       {/* 1. MEMORIES ITEMS LIST TAB */}
       {activeTab === 'items' && (
         <div className="space-y-6">
-          {/* Upload & Link Buttons Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <label className="flex items-center justify-center gap-2.5 p-3 rounded-2xl bg-gradient-to-r from-pink-500/20 to-rose-500/20 border border-pink-500/40 text-pink-300 text-xs font-bold hover:bg-pink-500/30 cursor-pointer transition-all shadow-md">
-              <Upload className="h-4 w-4" />
-              <span>{isUploadingPhoto ? 'Uploading...' : '+ Upload Photo'}</span>
+          {/* Action Buttons Bar: Upload Photo & Add Video Link */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* 1. Photo Upload Button */}
+            <label
+              className={`flex items-center justify-center gap-2.5 p-3.5 rounded-2xl bg-gradient-to-r from-pink-500/20 to-rose-500/20 border border-pink-500/40 text-pink-300 text-xs font-bold transition-all shadow-md ${
+                memories.length >= 10
+                  ? 'opacity-40 cursor-not-allowed'
+                  : 'hover:bg-pink-500/30 cursor-pointer'
+              }`}
+            >
+              <Upload className="h-4 w-4 text-pink-400 shrink-0" />
+              <span>{isUploadingPhoto ? 'Uploading Photo...' : '📷 + Upload Photo'}</span>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/*"
                 multiple
                 onChange={handlePhotoUpload}
-                disabled={isUploadingPhoto}
+                disabled={isUploadingPhoto || memories.length >= 10}
                 className="hidden"
               />
             </label>
 
-            <label className="flex items-center justify-center gap-2.5 p-3 rounded-2xl bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold hover:bg-purple-500/30 cursor-pointer transition-all shadow-md">
-              <Film className="h-4 w-4" />
-              <span>{isUploadingVideo ? 'Uploading...' : '+ Upload Video'}</span>
-              <input
-                type="file"
-                accept="video/mp4,video/webm,video/quicktime,video/*"
-                multiple
-                onChange={handleVideoUpload}
-                disabled={isUploadingVideo}
-                className="hidden"
-              />
-            </label>
-
+            {/* 2. Add Video Link Button */}
             <button
               type="button"
-              onClick={() => setShowUrlForm((prev) => !prev)}
-              className="flex items-center justify-center gap-2.5 p-3 rounded-2xl bg-slate-950 border border-slate-800 text-sky-300 text-xs font-bold hover:border-sky-500/40 cursor-pointer transition-all shadow-md"
+              disabled={memories.length >= 10}
+              onClick={() => {
+                setVideoModalError(null);
+                setShowVideoModal(true);
+              }}
+              className={`flex items-center justify-center gap-2.5 p-3.5 rounded-2xl bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold transition-all shadow-md ${
+                memories.length >= 10
+                  ? 'opacity-40 cursor-not-allowed'
+                  : 'hover:bg-purple-500/30 cursor-pointer'
+              }`}
             >
-              <LinkIcon className="h-4 w-4 text-sky-400" />
-              <span>+ Add Media URL</span>
+              <Film className="h-4 w-4 text-purple-400 shrink-0" />
+              <span>🎬 Add Video Link</span>
             </button>
           </div>
 
-          {/* Add Media URL Form */}
-          {showUrlForm && (
-            <div className="p-4 rounded-2xl bg-slate-950 border border-sky-500/30 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-sky-300">Add Photo or Video by Web URL Link</span>
+          {/* 3. ADD VIDEO LINK FORM / MODAL CARD */}
+          {showVideoModal && (
+            <div className="p-4 sm:p-5 rounded-3xl bg-slate-950 border border-purple-500/40 shadow-2xl space-y-4 relative">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                    <Film className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-heading text-sm font-bold text-white">Add a Video Memory</h4>
+                    <p className="text-[11px] text-slate-400">
+                      Paste a YouTube or supported video link to add it to your memories.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowVideoModal(false)}
+                  className="p-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-all cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddVideoLink} className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-300 block">Paste Video Link *</label>
+                  <div className="relative">
+                    <input
+                      type="url"
+                      required
+                      value={videoUrlInput}
+                      onChange={(e) => {
+                        setVideoUrlInput(e.target.value);
+                        if (videoModalError) setVideoModalError(null);
+                      }}
+                      placeholder="https://youtu.be/your-video"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 font-medium"
+                    />
+                    <LinkIcon className="h-4 w-4 text-purple-400 absolute left-3 top-3" />
+                  </div>
+                  <p className="text-[10px] text-slate-500">Supports YouTube Shorts, Watch, & Share links.</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-300 block">Title (optional)</label>
+                    <input
+                      type="text"
+                      value={videoTitleInput}
+                      onChange={(e) => setVideoTitleInput(e.target.value)}
+                      placeholder="Our Best Memory ❤️"
+                      className="w-full px-3 py-2 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-300 block">Caption (optional)</label>
+                    <input
+                      type="text"
+                      value={videoCaptionInput}
+                      onChange={(e) => setVideoCaptionInput(e.target.value)}
+                      placeholder="Watch this when you miss me."
+                      className="w-full px-3 py-2 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                </div>
+
+                {videoModalError && (
+                  <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+                    <span>{videoModalError}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => setMediaTypeInput('photo')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                      mediaTypeInput === 'photo' ? 'bg-pink-500 text-white' : 'bg-slate-900 text-slate-400'
-                    }`}
+                    onClick={() => setShowVideoModal(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 text-xs font-semibold border border-slate-800 cursor-pointer"
                   >
-                    Photo URL
+                    Cancel
                   </button>
                   <button
-                    type="button"
-                    onClick={() => setMediaTypeInput('video')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                      mediaTypeInput === 'video' ? 'bg-purple-600 text-white' : 'bg-slate-900 text-slate-400'
-                    }`}
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-xs font-extrabold text-white shadow-lg cursor-pointer flex items-center gap-1.5"
                   >
-                    Video URL
+                    <Check className="h-3.5 w-3.5" />
+                    <span>Add Video</span>
                   </button>
                 </div>
-              </div>
-
-              <input
-                type="url"
-                value={mediaUrlInput}
-                onChange={(e) => setMediaUrlInput(e.target.value)}
-                placeholder="Direct Web Image/Video URL (https://...)"
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
-              />
-
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  value={mediaTitleInput}
-                  onChange={(e) => setMediaTitleInput(e.target.value)}
-                  placeholder="Title"
-                  className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500"
-                />
-                <input
-                  type="text"
-                  value={mediaCaptionInput}
-                  onChange={(e) => setMediaCaptionInput(e.target.value)}
-                  placeholder="Caption"
-                  className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleAddMediaByUrl}
-                className="px-5 py-2 rounded-xl bg-sky-500 text-xs font-bold text-white shadow-md hover:bg-sky-600 cursor-pointer"
-              >
-                Add Linked Memory
-              </button>
+              </form>
             </div>
           )}
 
-          {/* List of Uploaded Memory Cards */}
+          {/* List of Uploaded & Linked Memory Cards */}
           {memories.length > 0 ? (
             <div className="space-y-4">
-              {memories.map((item, idx) => (
-                <div
-                  key={item.id}
-                  className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="h-6 w-6 rounded-lg bg-pink-500/20 text-pink-300 text-xs font-mono font-bold flex items-center justify-center border border-pink-500/30">
-                        0{idx + 1}
-                      </span>
-                      <span className="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-1.5">
-                        {item.type === 'video' ? <Film className="h-3.5 w-3.5 text-purple-400" /> : <ImageIcon className="h-3.5 w-3.5 text-pink-400" />}
-                        {item.type === 'video' ? 'Video Memory' : 'Photo Memory'}
-                      </span>
+              {memories.map((item, idx) => {
+                const isVid = item.type === 'video';
+                const thumbUrl = item.thumbnailUrl || (isVid ? (getYouTubeThumbnailUrl(item.fileUrl) || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=400&q=80') : resolveMediaUrl(item.fileUrl));
+
+                return (
+                  <div
+                    key={item.id}
+                    className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 max-w-full overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="h-6 w-6 rounded-lg bg-pink-500/20 text-pink-300 text-xs font-mono font-bold flex items-center justify-center border border-pink-500/30 shrink-0">
+                          0{idx + 1}
+                        </span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-1.5 truncate">
+                          {isVid ? <Film className="h-3.5 w-3.5 text-purple-400 shrink-0" /> : <ImageIcon className="h-3.5 w-3.5 text-pink-400 shrink-0" />}
+                          {isVid ? 'YouTube Video' : 'Photo Memory'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveUp(idx)}
+                          disabled={idx === 0}
+                          className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-40 cursor-pointer"
+                        >
+                          <MoveUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveDown(idx)}
+                          disabled={idx === memories.length - 1}
+                          className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-40 cursor-pointer"
+                        >
+                          <MoveDown className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleMoveUp(idx)}
-                        disabled={idx === 0}
-                        className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-40"
-                      >
-                        <MoveUp className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMoveDown(idx)}
-                        disabled={idx === memories.length - 1}
-                        className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-40"
-                      >
-                        <MoveDown className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(item.id)}
-                        className="p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* Media Thumbnail */}
+                      <div className="sm:col-span-1 h-32 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 relative group">
+                        <img src={thumbUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                        {isVid && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <div className="h-9 w-9 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-lg">
+                              <Play className="h-4 w-4 fill-white ml-0.5" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {/* Media Thumbnail */}
-                    <div className="sm:col-span-1 h-32 rounded-xl overflow-hidden bg-slate-900 border border-slate-800">
-                      {item.type === 'video' ? (
-                        <video src={resolveMediaUrl(item.fileUrl)} className="w-full h-full object-cover" />
-                      ) : (
-                        <img src={resolveMediaUrl(item.fileUrl)} alt="Thumbnail" className="w-full h-full object-cover" />
-                      )}
-                    </div>
+                      {/* Metadata Input Fields */}
+                      <div className="sm:col-span-2 space-y-2">
+                        <input
+                          type="text"
+                          value={item.title || ''}
+                          onChange={(e) => handleUpdateItem(item.id, { title: e.target.value })}
+                          placeholder="Memory Title (e.g. Our Special Trip)"
+                          className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500 font-bold"
+                        />
 
-                    {/* Metadata Input Fields */}
-                    <div className="sm:col-span-2 space-y-2">
-                      <input
-                        type="text"
-                        value={item.title || ''}
-                        onChange={(e) => handleUpdateItem(item.id, { title: e.target.value })}
-                        placeholder="Memory Title (e.g. Our Special Trip)"
-                        className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500 font-bold"
-                      />
+                        <input
+                          type="text"
+                          value={item.caption || ''}
+                          onChange={(e) => handleUpdateItem(item.id, { caption: e.target.value })}
+                          placeholder="Short Caption (e.g. Watch this when you miss me)"
+                          className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
+                        />
 
-                      <input
-                        type="text"
-                        value={item.caption || ''}
-                        onChange={(e) => handleUpdateItem(item.id, { caption: e.target.value })}
-                        placeholder="Short Caption (e.g. Couldn't stop laughing 😂)"
-                        className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
-                      />
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                            <Calendar className="h-3 w-3 text-pink-400 shrink-0" />
+                            <input
+                              type="text"
+                              value={item.date || ''}
+                              onChange={(e) => handleUpdateItem(item.id, { date: e.target.value })}
+                              placeholder="Year/Date (e.g. 2024)"
+                              className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
+                            />
+                          </div>
 
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-                          <Calendar className="h-3 w-3 text-pink-400 shrink-0" />
-                          <input
-                            type="text"
-                            value={item.date || ''}
-                            onChange={(e) => handleUpdateItem(item.id, { date: e.target.value })}
-                            placeholder="Year/Date (e.g. 2024)"
-                            className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
-                          />
-                        </div>
-
-                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-                          <MapPin className="h-3 w-3 text-sky-400 shrink-0" />
-                          <input
-                            type="text"
-                            value={item.location || ''}
-                            onChange={(e) => handleUpdateItem(item.id, { location: e.target.value })}
-                            placeholder="Location Tag"
-                            className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
-                          />
+                          <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                            <MapPin className="h-3 w-3 text-sky-400 shrink-0" />
+                            <input
+                              type="text"
+                              value={item.location || ''}
+                              onChange={(e) => handleUpdateItem(item.id, { location: e.target.value })}
+                              placeholder="Location Tag"
+                              className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-10 rounded-2xl bg-slate-950 border border-dashed border-slate-800 space-y-2">
               <Camera className="h-8 w-8 text-slate-500 mx-auto" />
               <p className="text-xs font-bold text-slate-400">No photo or video memories added yet.</p>
-              <p className="text-[11px] text-slate-500">Click the buttons above to upload files or paste web links.</p>
+              <p className="text-[11px] text-slate-500">Upload photos or add YouTube video links above.</p>
             </div>
           )}
         </div>

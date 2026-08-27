@@ -9,7 +9,10 @@ export interface WizardPhoto {
 export interface WizardMemoryItem {
   id: string;
   type: 'photo' | 'video';
+  source?: string;
   fileUrl: string;
+  videoUrl?: string;
+  videoId?: string;
   thumbnailUrl?: string;
   title?: string;
   caption?: string;

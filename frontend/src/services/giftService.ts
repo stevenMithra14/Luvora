@@ -1,6 +1,32 @@
 import { WizardData } from '../context/WizardContext';
 import { API_BASE_URL } from '../utils/constants';
 
+export const parseYouTubeVideoId = (rawUrl?: string): string | null => {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  const trimmed = rawUrl.trim();
+  const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([a-zA-Z0-9_-]{11})/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  return null;
+};
+
+export const getYouTubeEmbedUrl = (rawUrl?: string): string | null => {
+  const videoId = parseYouTubeVideoId(rawUrl);
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}?rel=0`;
+  }
+  return null;
+};
+
+export const getYouTubeThumbnailUrl = (rawUrl?: string): string | null => {
+  const videoId = parseYouTubeVideoId(rawUrl);
+  if (videoId) {
+    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  }
+  return null;
+};
+
 export interface PublicGoodieResponse {
   id: string;
   gift_id: string;
