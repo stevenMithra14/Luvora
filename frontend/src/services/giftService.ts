@@ -155,29 +155,25 @@ export const resolveMediaUrl = (rawUrl?: string, fallbackUrl: string = ''): stri
   return trimmed;
 };
 
-export async function searchSpotifyApi(query: string, type: string = 'track'): Promise<{
-  status: 'success' | 'unconfigured' | 'error';
-  message?: string;
-  tracks: any[];
-  artists?: any[];
-  albums?: any[];
-}> {
+export async function fetchSpotifyOEmbed(spotifyUrl: string): Promise<{
+  title?: string;
+  artist?: string;
+  thumbnail_url?: string;
+  html?: string;
+} | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/spotify/search?q=${encodeURIComponent(query)}&type=${encodeURIComponent(type)}`);
-    if (!response.ok) {
-      return {
-        status: 'error',
-        message: 'Music search is temporarily unavailable. Please try again.',
-        tracks: [],
-      };
-    }
-    return await response.json();
-  } catch (err) {
+    const oembedEndpoint = `https://open.spotify.com/oembed?url=${encodeURIComponent(spotifyUrl)}`;
+    const res = await fetch(oembedEndpoint);
+    if (!res.ok) return null;
+    const data = await res.json();
     return {
-      status: 'error',
-      message: 'Music search is temporarily unavailable. Please try again.',
-      tracks: [],
+      title: data.title || '',
+      artist: data.author_name || '',
+      thumbnail_url: data.thumbnail_url || '',
+      html: data.html || ''
     };
+  } catch (e) {
+    return null;
   }
 }
 

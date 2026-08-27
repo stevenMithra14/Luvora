@@ -142,7 +142,7 @@ export const AudioUploader: React.FC = () => {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <span>🎧 Search Spotify</span>
+            <span>🎧 Add from Spotify</span>
           </button>
         </div>
       </div>

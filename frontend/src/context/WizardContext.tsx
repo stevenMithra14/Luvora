@@ -100,6 +100,7 @@ export interface SpotifyTrack {
   durationFormatted?: string;
   previewUrl?: string;
   spotifyUrl?: string;
+  embedUrl?: string;
   uri?: string;
 }
 
