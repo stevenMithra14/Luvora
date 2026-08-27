@@ -138,10 +138,10 @@ export const SpotifyMusicPicker: React.FC<SpotifyMusicPickerProps> = () => {
         </div>
       ) : (
         /* 2. PASTE SPOTIFY LINK INPUT FORM */
-        <form onSubmit={handleAddSpotifySong} className="space-y-3 p-4 sm:p-5 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl">
-          <div className="flex items-center justify-between gap-2">
+        <form onSubmit={handleAddSpotifySong} className="space-y-3 p-4 sm:p-5 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl max-w-full overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2">
             <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-              <Music className="h-4 w-4 text-emerald-400" />
+              <Music className="h-4 w-4 text-emerald-400 shrink-0" />
               <span>Paste Spotify Song Link</span>
             </span>
             <span className="text-[10px] text-slate-400">No login or API key required</span>

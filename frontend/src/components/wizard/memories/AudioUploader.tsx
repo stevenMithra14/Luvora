@@ -107,25 +107,25 @@ export const AudioUploader: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5 p-5 sm:p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-xl">
+    <div className="space-y-5 p-4 sm:p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-xl max-w-full overflow-hidden">
       {/* 1. MUSIC SELECTION MODE SWITCHER BAR */}
-      <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-800 pb-4">
         <div className="flex items-center gap-2.5">
           <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-pink-500/25 shrink-0">
             <Disc className="h-5 w-5 animate-spin-slow" />
           </div>
-          <div>
-            <h4 className="font-heading text-sm font-bold text-white">Gift Background Music</h4>
-            <p className="text-[11px] text-slate-400">Select music from Spotify or upload custom MP3 tracks</p>
+          <div className="min-w-0">
+            <h4 className="font-heading text-sm font-bold text-white truncate">Gift Background Music</h4>
+            <p className="text-[11px] text-slate-400 truncate">Select music from Spotify or upload custom MP3 tracks</p>
           </div>
         </div>
 
-        {/* 2 Tabs: Upload Your Music vs Search Spotify */}
-        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-2xl border border-slate-800 shrink-0">
+        {/* 2 Tabs: Upload Your Music vs Search Spotify (Responsive Grid on Mobile) */}
+        <div className="grid grid-cols-2 gap-1.5 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 w-full sm:w-auto shrink-0">
           <button
             type="button"
             onClick={() => setMusicTab('custom')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 w-full ${
               musicTab === 'custom'
                 ? 'bg-pink-500 text-white shadow-md'
                 : 'text-slate-400 hover:text-white'
@@ -136,7 +136,7 @@ export const AudioUploader: React.FC = () => {
           <button
             type="button"
             onClick={() => setMusicTab('spotify')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 w-full ${
               musicTab === 'spotify'
                 ? 'bg-emerald-500 text-white shadow-md'
                 : 'text-slate-400 hover:text-white'
