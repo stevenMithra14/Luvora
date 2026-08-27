@@ -123,7 +123,7 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
   };
 
   return (
-    <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 select-none flex flex-col items-end gap-2 max-w-[calc(100vw-2rem)]">
+    <div className="fixed top-3 right-3 sm:top-5 sm:right-5 z-50 select-none flex flex-col items-end gap-2 max-w-[calc(100vw-1.5rem)]">
       {!currentTrack.isSpotify && (
         <audio
           ref={audioRef}
@@ -137,11 +137,11 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
       <motion.div
         initial={{ opacity: 0, y: -20, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="flex items-center gap-2 p-1.5 pl-2 pr-3 rounded-full bg-slate-950/95 border border-pink-500/40 shadow-2xl backdrop-blur-xl text-white max-w-full"
+        className="flex items-center gap-2 p-1.5 pl-2 pr-2.5 rounded-full bg-slate-950/95 border border-pink-500/40 shadow-2xl backdrop-blur-xl text-white max-w-full"
       >
         <div
           onClick={() => currentTrack.isSpotify && setShowEmbed((prev) => !prev)}
-          className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-pink-400 shadow-md cursor-pointer group shrink-0"
+          className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full overflow-hidden border-2 border-pink-400 shadow-md cursor-pointer group shrink-0"
         >
           <img
             src={currentTrack.albumCoverUrl || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80'}
@@ -157,25 +157,23 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
           </div>
         </div>
 
-        <div className="flex flex-col max-w-[120px] sm:max-w-[150px] min-w-0">
-          <div className="flex items-center gap-1 overflow-hidden">
-            <span className="text-[11px] font-bold text-white truncate leading-tight">
-              {currentTrack.title || 'Special Song'}
-            </span>
-          </div>
+        <div className="flex flex-col max-w-[100px] sm:max-w-[140px] min-w-0">
+          <span className="text-[10px] sm:text-[11px] font-bold text-white truncate leading-tight">
+            {currentTrack.title || 'Special Song'}
+          </span>
           <span className="text-[9px] font-semibold text-pink-300/80 truncate">
             {currentTrack.artist || 'Luvora Track'} {currentTrack.isSpotify ? '• 🎧 Spotify' : ''}
           </span>
         </div>
 
-        <div className="flex items-center gap-1 ml-1">
+        <div className="flex items-center gap-1 ml-0.5 shrink-0">
           {currentTrack.isSpotify ? (
             <button
               type="button"
               onClick={() => setShowEmbed((prev) => !prev)}
               className="px-2.5 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[10px] font-bold border border-emerald-500/30 flex items-center gap-1 cursor-pointer"
             >
-              <span>{showEmbed ? 'Hide Player' : 'Play Song'}</span>
+              <span>{showEmbed ? 'Hide' : 'Play'}</span>
               {showEmbed ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </button>
           ) : (
@@ -224,19 +222,19 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
         </div>
       </motion.div>
 
-      {/* OFFICIAL SPOTIFY EMBED IFRAME POPUP/WIDGET */}
+      {/* OFFICIAL SPOTIFY EMBED IFRAME POPUP (COLLAPSED BY DEFAULT FOR COMPACT SCREEN LAYOUT) */}
       <AnimatePresence>
-        {currentTrack.isSpotify && (showEmbed || autoStart) && (
+        {currentTrack.isSpotify && showEmbed && (
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="w-[300px] sm:w-[340px] rounded-3xl bg-slate-950 border border-emerald-500/40 p-3 shadow-2xl space-y-2"
+            className="w-[280px] sm:w-[320px] rounded-3xl bg-slate-950/95 border border-emerald-500/40 p-2.5 shadow-2xl space-y-2 backdrop-blur-xl max-w-full"
           >
             <div className="flex items-center justify-between px-1">
               <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
                 <Disc className="h-3.5 w-3.5 animate-spin-slow text-emerald-400" />
-                Spotify Music Experience
+                Spotify Music Player
               </span>
               <a
                 href={currentTrack.spotifyUrl || `https://open.spotify.com/track/${currentTrack.spotifyId}`}
@@ -252,7 +250,7 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
             <iframe
               src={currentTrack.embedUrl || `https://open.spotify.com/embed/track/${currentTrack.spotifyId}?utm_source=generator`}
               width="100%"
-              height="152"
+              height="80"
               frameBorder="0"
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               loading="lazy"

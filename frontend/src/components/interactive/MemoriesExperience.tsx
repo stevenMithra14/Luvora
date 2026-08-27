@@ -13,16 +13,7 @@ import {
   X
 } from 'lucide-react';
 import { WizardMemoryItem, MemoryConfig } from '../../context/WizardContext';
-import { resolveMediaUrl } from '../../services/giftService';
-
-const getYouTubeEmbedUrl = (rawUrl?: string) => {
-  if (!rawUrl || typeof rawUrl !== 'string') return null;
-  const match = rawUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-  if (match && match[1]) {
-    return `https://www.youtube.com/embed/${match[1]}?autoplay=1&rel=0`;
-  }
-  return null;
-};
+import { resolveMediaUrl, parseYouTubeVideoId } from '../../services/giftService';
 
 const getVimeoEmbedUrl = (rawUrl?: string) => {
   if (!rawUrl || typeof rawUrl !== 'string') return null;
@@ -184,6 +175,7 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement)?.tagName?.toLowerCase() === 'iframe') return;
     touchStartX.current = e.targetTouches[0].clientX;
   };
 
@@ -274,25 +266,26 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
 
   const renderVideoFrame = (item: WizardMemoryItem) => {
     const rawVideoUrl = item.fileUrl || (item as any).videoUrl;
-    const ytEmbed = getYouTubeEmbedUrl(rawVideoUrl);
+    const ytVideoId = item.videoId || parseYouTubeVideoId(rawVideoUrl);
+    const ytEmbed = ytVideoId ? `https://www.youtube.com/embed/${ytVideoId}?rel=0&enablejsapi=1` : null;
     const vimeoEmbed = getVimeoEmbedUrl(rawVideoUrl);
 
     if (ytEmbed) {
       return (
-        <div className="relative w-full max-w-md mx-auto space-y-2">
-          <div className="rounded-2xl overflow-hidden border border-pink-500/30 bg-black shadow-2xl aspect-video w-full max-h-[260px]">
+        <div className="relative w-full max-w-md mx-auto space-y-2 pointer-events-auto z-20">
+          <div className="rounded-2xl overflow-hidden border border-pink-500/40 bg-black shadow-2xl aspect-video w-full max-h-[280px] relative pointer-events-auto z-20">
             <iframe
               title="YouTube Video Embed"
               src={ytEmbed}
-              className="w-full h-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              className="w-full h-full border-0 rounded-2xl pointer-events-auto relative z-20"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
           </div>
           {(item.title || item.caption) && (
             <div className="mt-2 text-center space-y-0.5 px-2">
               {item.title && <h4 className="font-heading text-sm font-bold text-white truncate">{item.title}</h4>}
-              {item.caption && <p className="font-serif text-xs italic text-slate-300 line-clamp-1">"{item.caption}"</p>}
+              {item.caption && <p className="font-serif text-xs italic text-slate-300 line-clamp-2">"{item.caption}"</p>}
             </div>
           )}
         </div>
