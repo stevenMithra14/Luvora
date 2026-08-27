@@ -60,15 +60,15 @@ export const CreateGiftPreview: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-4.5rem)] flex flex-col justify-between py-2 px-4 sm:px-6 overflow-hidden">
-      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col justify-center my-auto">
+    <div className="min-h-[calc(100vh-4.5rem)] flex flex-col justify-between py-2 sm:py-4 px-3.5 sm:px-6 pb-32 sm:pb-12">
+      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col justify-start">
         {/* Progress Stepper */}
         <WizardProgress currentStep={5} />
 
         {/* 50-50 Split Desktop & Laptop Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center flex-1 my-auto w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start flex-1 w-full">
           {/* LEFT 50%: Password, Hint, Terms & Publish Section */}
-          <div className="w-full lg:col-span-1 space-y-4 max-h-[calc(100vh-9.5rem)] overflow-y-auto pr-1">
+          <div className="w-full lg:col-span-1 space-y-4 pr-1">
             {/* Header */}
             <div>
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-pink-500/10 text-pink-300 border border-pink-500/20 mb-1">

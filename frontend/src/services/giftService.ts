@@ -1,6 +1,5 @@
 import { WizardData } from '../context/WizardContext';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+import { API_BASE_URL } from '../utils/constants';
 
 export interface PublicGoodieResponse {
   id: string;
@@ -210,18 +209,27 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
     }))
   };
 
-  const response = await fetch(`${API_BASE_URL}/gifts`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/gifts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(parseErrorDetail(errorData, 'Failed to publish gift. Please try again.'));
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(parseErrorDetail(errorData, 'Failed to publish gift. Please try again.'));
+    }
+
+    return await response.json();
+  } catch (err: any) {
+    if (err instanceof TypeError && (err.message === 'Failed to fetch' || err.message.includes('fetch'))) {
+      throw new Error(
+        `Unable to connect to Luvora API server (${API_BASE_URL}). If hosted on Render free tier, the backend server may be spinning up from sleep (takes up to 50s). Please wait a moment and tap 'Send Gift Now' again.`
+      );
+    }
+    throw err;
   }
-
-  return await response.json();
 }
 
 export async function updateGiftApi(editToken: string, data: WizardData): Promise<PublishedGiftResponse> {
