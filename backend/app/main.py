@@ -47,14 +47,16 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Content-Security-Policy"] = "default-src 'self' http: https: data: blob: 'unsafe-inline';"
     return response
 
-# Production Error Handler (Hides raw tracebacks in production)
+# Production Error Handler (attaches CORS headers so frontend receives diagnostic error message)
 @app.exception_handler(Exception)
 async def custom_global_exception_handler(request: Request, exc: Exception):
     if DEBUG:
         raise exc
+    print(f"Internal Server Error on {request.url.path}: {exc}")
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "An internal server error occurred. Please try again later."}
+        content={"detail": f"Server error: {str(exc)}"},
+        headers={"Access-Control-Allow-Origin": "*"}
     )
 
 # Configure CORS

@@ -86,6 +86,12 @@ def init_db(db: Session = None):
                 if "password_hint" not in columns:
                     conn.execute(text("ALTER TABLE gifts ADD COLUMN password_hint TEXT;"))
                     conn.commit()
+                if "password_enabled" not in columns:
+                    conn.execute(text("ALTER TABLE gifts ADD COLUMN password_enabled BOOLEAN DEFAULT FALSE;"))
+                    conn.commit()
+                if "password_hash" not in columns:
+                    conn.execute(text("ALTER TABLE gifts ADD COLUMN password_hash VARCHAR;"))
+                    conn.commit()
     except Exception as err:
         print(f"Migration note: {err}")
     
