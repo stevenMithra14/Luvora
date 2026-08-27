@@ -75,6 +75,10 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
 
   const messageLines = (giftData.message || '').split('\n').filter((l) => l.trim().length > 0);
 
+  const memoriesModule = (giftData.interactives || []).find((i) => i.interactive_type === 'photo_memories');
+  const memoriesFromApi = memoriesModule?.configuration_json?.memories;
+  const memoryConfigFromApi = memoriesModule?.configuration_json?.memoryConfig;
+
   return (
     <div className={`min-h-screen w-full transition-colors duration-700 selection:bg-pink-500/30 ${theme.background} text-slate-100 font-sans relative overflow-x-hidden max-w-full`}>
       {/* Corner Cassette & Vinyl Music Player with Album Cover Artwork */}
@@ -237,6 +241,8 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
             className="py-8 min-h-screen flex flex-col justify-center"
           >
             <MemoriesExperience
+              memories={memoriesFromApi}
+              config={memoryConfigFromApi}
               photosFallback={formattedPhotos}
               recipientName={giftData.recipient_name}
               onMemoriesComplete={() => setActiveStage('final')}

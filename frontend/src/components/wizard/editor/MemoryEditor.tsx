@@ -14,10 +14,10 @@ import {
   Link as LinkIcon
 } from 'lucide-react';
 import { useWizard, WizardMemoryItem } from '../../../context/WizardContext';
-import { uploadPhotoApi, uploadVideoApi } from '../../../services/giftService';
+import { uploadPhotoApi, uploadVideoApi, resolveMediaUrl } from '../../../services/giftService';
 
 export const MemoryEditor: React.FC = () => {
-  const { data, setMemories, setMemoryConfig } = useWizard();
+  const { data, setMemories, setPhotos, setMemoryConfig } = useWizard();
   const memories = data.memories || [];
   const memoryConfig = data.memoryConfig;
 
@@ -42,30 +42,45 @@ export const MemoryEditor: React.FC = () => {
     setUploadError(null);
 
     try {
-      const file = files[0];
-      if (file.size > 10 * 1024 * 1024) {
-        setUploadError('Photo file size exceeds 10MB limit.');
-        setIsUploadingPhoto(false);
-        return;
+      const newMemories: WizardMemoryItem[] = [];
+      const newPhotos: any[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.size > 20 * 1024 * 1024) {
+          setUploadError(`Photo file '${file.name}' exceeds 20MB limit.`);
+          continue;
+        }
+
+        const res = await uploadPhotoApi(file);
+        const returnedUrl = res.url;
+        const memoryId = `mem-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
+        
+        newMemories.push({
+          id: memoryId,
+          type: 'photo',
+          fileUrl: returnedUrl,
+          title: file.name.split('.')[0] || 'Photo Memory',
+          caption: '',
+          date: '',
+          frameStyle: memoryConfig.frameStyle || 'polaroid',
+          displayOrder: memories.length + i,
+        });
+
+        newPhotos.push({
+          id: `photo-${Date.now()}-${i}`,
+          fileUrl: returnedUrl,
+          caption: file.name.split('.')[0] || '',
+        });
       }
 
-      const res = await uploadPhotoApi(file);
-      const newMemory: WizardMemoryItem = {
-        id: `mem-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        type: 'photo',
-        fileUrl: res.url,
-        title: 'New Photo Memory',
-        caption: '',
-        date: '',
-        frameStyle: memoryConfig.frameStyle || 'polaroid',
-        displayOrder: memories.length,
-      };
-
-      setMemories([...memories, newMemory]);
+      setMemories([...memories, ...newMemories]);
+      setPhotos([...data.photos, ...newPhotos]);
     } catch (err: any) {
       setUploadError(err?.message || 'Failed to upload photo. Please try again.');
     } finally {
       setIsUploadingPhoto(false);
+      e.target.value = '';
     }
   };
 
@@ -78,30 +93,37 @@ export const MemoryEditor: React.FC = () => {
     setUploadError(null);
 
     try {
-      const file = files[0];
-      if (file.size > 50 * 1024 * 1024) {
-        setUploadError('Video file size exceeds 50MB limit.');
-        setIsUploadingVideo(false);
-        return;
+      const newMemories: WizardMemoryItem[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.size > 100 * 1024 * 1024) {
+          setUploadError(`Video file '${file.name}' exceeds 100MB limit.`);
+          continue;
+        }
+
+        const res = await uploadVideoApi(file);
+        const returnedUrl = res.url;
+        const memoryId = `mem-vid-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
+
+        newMemories.push({
+          id: memoryId,
+          type: 'video',
+          fileUrl: returnedUrl,
+          title: file.name.split('.')[0] || 'Video Memory',
+          caption: '',
+          date: '',
+          frameStyle: memoryConfig.videoFrameStyle || 'cinema',
+          displayOrder: memories.length + i,
+        });
       }
 
-      const res = await uploadVideoApi(file);
-      const newMemory: WizardMemoryItem = {
-        id: `mem-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        type: 'video',
-        fileUrl: res.url,
-        title: 'New Video Memory',
-        caption: '',
-        date: '',
-        frameStyle: memoryConfig.videoFrameStyle || 'cinema',
-        displayOrder: memories.length,
-      };
-
-      setMemories([...memories, newMemory]);
+      setMemories([...memories, ...newMemories]);
     } catch (err: any) {
       setUploadError(err?.message || 'Failed to upload video. Please try again.');
     } finally {
       setIsUploadingVideo(false);
+      e.target.value = '';
     }
   };
 
@@ -218,7 +240,8 @@ export const MemoryEditor: React.FC = () => {
               <span>{isUploadingPhoto ? 'Uploading...' : '+ Upload Photo'}</span>
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/*"
+                multiple
                 onChange={handlePhotoUpload}
                 disabled={isUploadingPhoto}
                 className="hidden"
@@ -230,7 +253,8 @@ export const MemoryEditor: React.FC = () => {
               <span>{isUploadingVideo ? 'Uploading...' : '+ Upload Video'}</span>
               <input
                 type="file"
-                accept="video/mp4,video/webm,video/quicktime"
+                accept="video/mp4,video/webm,video/quicktime,video/*"
+                multiple
                 onChange={handleVideoUpload}
                 disabled={isUploadingVideo}
                 className="hidden"
@@ -359,9 +383,9 @@ export const MemoryEditor: React.FC = () => {
                     {/* Media Thumbnail */}
                     <div className="sm:col-span-1 h-32 rounded-xl overflow-hidden bg-slate-900 border border-slate-800">
                       {item.type === 'video' ? (
-                        <video src={item.fileUrl} className="w-full h-full object-cover" />
+                        <video src={resolveMediaUrl(item.fileUrl)} className="w-full h-full object-cover" />
                       ) : (
-                        <img src={item.fileUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                        <img src={resolveMediaUrl(item.fileUrl)} alt="Thumbnail" className="w-full h-full object-cover" />
                       )}
                     </div>
 

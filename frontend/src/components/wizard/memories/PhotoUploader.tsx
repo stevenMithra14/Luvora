@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, Image as ImageIcon, Trash2, ArrowUp, ArrowDown, Loader2, AlertCircle } from 'lucide-react';
 import { useWizard, WizardPhoto } from '../../../context/WizardContext';
 import { uploadPhotoFile } from '../../../services/uploadService';
+import { resolveMediaUrl } from '../../../services/giftService';
 
 export const PhotoUploader: React.FC = () => {
   const { data, setPhotos } = useWizard();
@@ -170,7 +171,7 @@ export const PhotoUploader: React.FC = () => {
                 {/* Image Thumbnail */}
                 <div className="h-16 w-16 rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0">
                   <img
-                    src={photo.fileUrl}
+                    src={resolveMediaUrl(photo.fileUrl)}
                     alt={photo.caption || 'Memory Photo'}
                     className="h-full w-full object-cover"
                   />
