@@ -15,7 +15,6 @@ export const GoodieCard: React.FC<GoodieCardProps> = ({ goodie, isAdded, count =
 
   const shortName = goodie.name
     .replace('Personal ', '')
-    .replace(' Favorite', '')
     .replace(' Memory', '')
     .replace(' Message', '')
     .replace(' Clip', '')
@@ -26,15 +25,15 @@ export const GoodieCard: React.FC<GoodieCardProps> = ({ goodie, isAdded, count =
 
   return (
     <motion.div
-      whileHover={{ scale: 1.03, y: -2 }}
+      whileHover={{ scale: 1.02, y: -2 }}
       transition={{ duration: 0.2 }}
       onClick={() => onAdd(goodie)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="p-4 rounded-2xl bg-white border border-slate-300 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col items-center justify-between text-center relative font-mono cursor-pointer select-none group"
+      className="p-2.5 sm:p-4 rounded-2xl bg-white border border-slate-300 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col items-center justify-between text-center relative font-mono cursor-pointer select-none group h-full min-h-[175px] sm:min-h-[220px]"
     >
       {/* Visual Image Container with Red Marker Circle Overlay */}
-      <div className="relative h-24 w-full flex items-center justify-center p-2 mb-2">
+      <div className="relative h-16 sm:h-24 w-full flex items-center justify-center p-1 sm:p-2 mb-1 sm:mb-2">
         {/* RED HAND-DRAWN MARKER CIRCLE OVERLAY ON CURSOR HOVER ONLY */}
         {isHovered && (
           <motion.svg
@@ -66,29 +65,29 @@ export const GoodieCard: React.FC<GoodieCardProps> = ({ goodie, isAdded, count =
             className="max-h-full max-w-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform"
           />
         ) : (
-          <span className="text-4xl">{goodie.icon}</span>
+          <span className="text-2xl sm:text-4xl">{goodie.icon}</span>
         )}
 
         {/* Count Badge */}
         {count > 1 && (
-          <span className="absolute top-0 right-0 bg-rose-600 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded-full shadow-md z-30">
+          <span className="absolute top-0 right-0 bg-rose-600 text-white font-mono font-bold text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full shadow-md z-30">
             x{count}
           </span>
         )}
       </div>
 
       {/* Item Title */}
-      <div className="space-y-1 w-full">
-        <h4 className="font-mono text-xs font-bold text-slate-900 tracking-tight">
+      <div className="space-y-0.5 w-full">
+        <h4 className="font-mono text-[11px] sm:text-xs font-bold text-slate-900 tracking-tight leading-tight">
           + {displayTitle}
         </h4>
-        <p className="text-[10px] text-slate-500 font-sans line-clamp-1 leading-tight">
+        <p className="text-[9px] sm:text-[10px] text-slate-500 font-sans line-clamp-2 leading-tight">
           {goodie.description}
         </p>
       </div>
 
       {/* Action Button */}
-      <div className="pt-3 w-full mt-auto">
+      <div className="pt-2 sm:pt-3 w-full mt-auto">
         <button
           type="button"
           onClick={(e) => {
@@ -96,14 +95,14 @@ export const GoodieCard: React.FC<GoodieCardProps> = ({ goodie, isAdded, count =
             onAdd(goodie);
           }}
           aria-label={`Tuck ${displayTitle}`}
-          className={`w-full min-h-[38px] py-1.5 px-3 rounded-xl text-[11px] font-bold font-mono transition-all duration-200 flex items-center justify-center gap-1 cursor-pointer focus:ring-2 focus:ring-rose-500 focus:outline-none ${
+          className={`w-full min-h-[34px] sm:min-h-[38px] py-1 sm:py-1.5 px-1.5 sm:px-3 rounded-xl text-[10px] sm:text-[11px] font-bold font-mono transition-all duration-200 flex items-center justify-center gap-1 cursor-pointer focus:ring-2 focus:ring-rose-500 focus:outline-none ${
             isAdded
               ? 'bg-rose-100 text-rose-800 border border-rose-300 hover:bg-rose-200'
               : 'bg-slate-900 text-white hover:bg-black shadow-sm'
           }`}
         >
-          <Plus className="h-3.5 w-3.5 stroke-[3]" />
-          <span>{count > 0 ? `Tuck More (${count})` : 'Tuck Inside'}</span>
+          <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5 stroke-[3]" />
+          <span>{count > 0 ? `Tuck (${count})` : '+ Tuck Inside'}</span>
         </button>
       </div>
     </motion.div>

@@ -193,8 +193,8 @@ export const CreateGiftGoodies: React.FC = () => {
                   <span>ADD</span>
                 </div>
 
-                {/* Goodies Catalog Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-1 sm:pt-2">
+                {/* Goodies Catalog Grid (Responsive 2-column layout on all mobile & desktop screens) */}
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 pt-1 sm:pt-2">
                   {GOODIE_CATALOG.map((goodieDef) => {
                     const count = data.goodies.filter((g) => g.goodieType === goodieDef.type).length;
                     const isAdded = count > 0;
