@@ -15,10 +15,11 @@ import {
   Play,
   X,
   Check,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
 import { useWizard, WizardMemoryItem } from '../../../context/WizardContext';
-import { uploadPhotoApi, resolveMediaUrl, parseYouTubeVideoId, getYouTubeThumbnailUrl } from '../../../services/giftService';
+import { uploadPhotoApi, uploadVideoApi, resolveMediaUrl, parseYouTubeVideoId, getYouTubeThumbnailUrl } from '../../../services/giftService';
 
 export const MemoryEditor: React.FC = () => {
   const { data, setMemories, setPhotos, setMemoryConfig } = useWizard();
@@ -27,6 +28,7 @@ export const MemoryEditor: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'items' | 'settings'>('items');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Video Link Modal State
@@ -35,6 +37,58 @@ export const MemoryEditor: React.FC = () => {
   const [videoTitleInput, setVideoTitleInput] = useState('');
   const [videoCaptionInput, setVideoCaptionInput] = useState('');
   const [videoModalError, setVideoModalError] = useState<string | null>(null);
+
+  // Handle Video File Upload
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (memories.length >= 10) {
+      setUploadError('Maximum limit of 10 media items reached (photos + videos). Remove a memory to upload more.');
+      return;
+    }
+
+    setIsUploadingVideo(true);
+    setUploadError(null);
+
+    try {
+      const newMemories: WizardMemoryItem[] = [];
+      const slotsRemaining = 10 - memories.length;
+      const countToUpload = Math.min(files.length, slotsRemaining);
+
+      for (let i = 0; i < countToUpload; i++) {
+        const file = files[i];
+        if (file.size > 50 * 1024 * 1024) {
+          setUploadError(`Video file '${file.name}' exceeds 50MB limit.`);
+          continue;
+        }
+
+        const res = await uploadVideoApi(file);
+        const returnedUrl = res.url;
+        const memoryId = `mem-vid-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
+
+        newMemories.push({
+          id: memoryId,
+          type: 'video',
+          source: 'luvora',
+          fileUrl: returnedUrl,
+          videoUrl: returnedUrl,
+          title: file.name.split('.')[0] || 'Luvora Video Memory',
+          caption: '',
+          date: '',
+          frameStyle: memoryConfig.videoFrameStyle || 'cinema',
+          displayOrder: memories.length + i,
+        });
+      }
+
+      setMemories([...memories, ...newMemories]);
+    } catch (err: any) {
+      setUploadError(err?.message || 'Failed to upload video. Please try again.');
+    } finally {
+      setIsUploadingVideo(false);
+      e.target.value = '';
+    }
+  };
 
   // Handle Photo Upload (Keep exact photo upload functionality)
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,18 +277,18 @@ export const MemoryEditor: React.FC = () => {
       {/* 1. MEMORIES ITEMS LIST TAB */}
       {activeTab === 'items' && (
         <div className="space-y-6">
-          {/* Action Buttons Bar: Upload Photo & Add Video Link */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Action Buttons Bar: Upload Photo, Upload Video, & Add Video Link */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* 1. Photo Upload Button */}
             <label
-              className={`flex items-center justify-center gap-2.5 p-3.5 rounded-2xl bg-gradient-to-r from-pink-500/20 to-rose-500/20 border border-pink-500/40 text-pink-300 text-xs font-bold transition-all shadow-md ${
+              className={`flex items-center justify-center gap-2 p-3 rounded-2xl bg-gradient-to-r from-pink-500/20 to-rose-500/20 border border-pink-500/40 text-pink-300 text-xs font-bold transition-all shadow-md ${
                 memories.length >= 10
                   ? 'opacity-40 cursor-not-allowed'
                   : 'hover:bg-pink-500/30 cursor-pointer'
               }`}
             >
               <Upload className="h-4 w-4 text-pink-400 shrink-0" />
-              <span>{isUploadingPhoto ? 'Uploading Photo...' : '📷 + Upload Photo'}</span>
+              <span>{isUploadingPhoto ? 'Uploading...' : '📷 + Upload Photo'}</span>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/*"
@@ -245,7 +299,27 @@ export const MemoryEditor: React.FC = () => {
               />
             </label>
 
-            {/* 2. Add Video Link Button */}
+            {/* 2. Video Upload Button (Luvora Hosted) */}
+            <label
+              className={`flex items-center justify-center gap-2 p-3 rounded-2xl bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold transition-all shadow-md ${
+                memories.length >= 10
+                  ? 'opacity-40 cursor-not-allowed'
+                  : 'hover:bg-purple-500/30 cursor-pointer'
+              }`}
+            >
+              <Film className="h-4 w-4 text-purple-400 shrink-0" />
+              <span>{isUploadingVideo ? 'Uploading...' : '🎬 + Upload Video'}</span>
+              <input
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime,video/*"
+                multiple
+                onChange={handleVideoUpload}
+                disabled={isUploadingVideo || memories.length >= 10}
+                className="hidden"
+              />
+            </label>
+
+            {/* 3. Add Video Link Button */}
             <button
               type="button"
               disabled={memories.length >= 10}
@@ -253,14 +327,14 @@ export const MemoryEditor: React.FC = () => {
                 setVideoModalError(null);
                 setShowVideoModal(true);
               }}
-              className={`flex items-center justify-center gap-2.5 p-3.5 rounded-2xl bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold transition-all shadow-md ${
+              className={`flex items-center justify-center gap-2 p-3 rounded-2xl bg-slate-950 border border-slate-800 text-sky-300 text-xs font-bold transition-all shadow-md ${
                 memories.length >= 10
                   ? 'opacity-40 cursor-not-allowed'
-                  : 'hover:bg-purple-500/30 cursor-pointer'
+                  : 'hover:border-sky-500/40 cursor-pointer'
               }`}
             >
-              <Film className="h-4 w-4 text-purple-400 shrink-0" />
-              <span>🎬 Add Video Link</span>
+              <LinkIcon className="h-4 w-4 text-sky-400 shrink-0" />
+              <span>🔗 + Add Video Link</span>
             </button>
           </div>
 
@@ -287,6 +361,16 @@ export const MemoryEditor: React.FC = () => {
                 >
                   <X className="h-4 w-4" />
                 </button>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-200 text-xs space-y-1">
+                <p className="font-bold flex items-center gap-1.5 text-indigo-300">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Tip for Restricted Videos:
+                </p>
+                <p className="text-[11px] leading-relaxed text-indigo-200/90">
+                  If your YouTube video is age-restricted or unlisted, upload the video file directly to Luvora using <strong className="text-white">🎬 Upload Video</strong> above so it plays seamlessly inside the gift!
+                </p>
               </div>
 
               <form onSubmit={handleAddVideoLink} className="space-y-3">
@@ -365,6 +449,7 @@ export const MemoryEditor: React.FC = () => {
             <div className="space-y-4">
               {memories.map((item, idx) => {
                 const isVid = item.type === 'video';
+                const isLuvoraVideo = isVid && (item.source === 'luvora' || !item.videoId);
                 const thumbUrl = item.thumbnailUrl || (isVid ? (getYouTubeThumbnailUrl(item.fileUrl) || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=400&q=80') : resolveMediaUrl(item.fileUrl));
 
                 return (
@@ -379,7 +464,7 @@ export const MemoryEditor: React.FC = () => {
                         </span>
                         <span className="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-1.5 truncate">
                           {isVid ? <Film className="h-3.5 w-3.5 text-purple-400 shrink-0" /> : <ImageIcon className="h-3.5 w-3.5 text-pink-400 shrink-0" />}
-                          {isVid ? 'YouTube Video' : 'Photo Memory'}
+                          {isLuvoraVideo ? 'Luvora Hosted Video' : isVid ? 'YouTube Video Link' : 'Photo Memory'}
                         </span>
                       </div>
 
@@ -411,15 +496,26 @@ export const MemoryEditor: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {/* Media Thumbnail */}
+                      {/* Media Preview Thumbnail */}
                       <div className="sm:col-span-1 h-32 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 relative group">
-                        <img src={thumbUrl} alt="Thumbnail" className="w-full h-full object-cover" />
-                        {isVid && (
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="h-9 w-9 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-lg">
-                              <Play className="h-4 w-4 fill-white ml-0.5" />
-                            </div>
-                          </div>
+                        {isLuvoraVideo ? (
+                          <video
+                            src={resolveMediaUrl(item.fileUrl)}
+                            controls
+                            preload="metadata"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <>
+                            <img src={thumbUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                            {isVid && (
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                <div className="h-9 w-9 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-lg">
+                                  <Play className="h-4 w-4 fill-white ml-0.5" />
+                                </div>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
 

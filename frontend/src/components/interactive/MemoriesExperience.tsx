@@ -282,8 +282,20 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
               allowFullScreen
             />
           </div>
+          <div className="flex items-center justify-between px-2 text-[10px] text-slate-400">
+            <span className="truncate">YouTube Video Memory</span>
+            <a
+              href={rawVideoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-pink-400 hover:underline font-bold shrink-0 flex items-center gap-1"
+            >
+              <span>Watch on YouTube</span>
+              <span>↗</span>
+            </a>
+          </div>
           {(item.title || item.caption) && (
-            <div className="mt-2 text-center space-y-0.5 px-2">
+            <div className="mt-1 text-center space-y-0.5 px-2">
               {item.title && <h4 className="font-heading text-sm font-bold text-white truncate">{item.title}</h4>}
               {item.caption && <p className="font-serif text-xs italic text-slate-300 line-clamp-2">"{item.caption}"</p>}
             </div>
