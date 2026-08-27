@@ -4,18 +4,13 @@ import {
   Sparkles,
   Heart,
   Calendar,
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
-  Maximize2,
   ChevronLeft,
   ChevronRight,
   ZoomIn,
-  X,
-  RotateCcw,
   Film,
-  Camera
+  Camera,
+  RotateCcw,
+  X
 } from 'lucide-react';
 import { WizardMemoryItem, MemoryConfig } from '../../context/WizardContext';
 import { resolveMediaUrl } from '../../services/giftService';
@@ -49,6 +44,16 @@ const getPlayableVideoUrl = (rawUrl?: string) => {
   return resolveMediaUrl(trimmed, 'https://vjs.zencdn.net/v/oceans.mp4');
 };
 
+const isMediaVideo = (item?: WizardMemoryItem | { fileUrl?: string; type?: string }): boolean => {
+  if (!item) return false;
+  if (item.type === 'video') return true;
+  const url = (item.fileUrl || (item as any).videoUrl || (item as any).file_url || '').toLowerCase();
+  if (url.includes('/uploads/videos/') || url.match(/\.(mp4|webm|mov|m4v|ogv|3gp|avi)(\?.*)?$/i)) {
+    return true;
+  }
+  return false;
+};
+
 interface MemoriesExperienceProps {
   memories?: WizardMemoryItem[];
   config?: MemoryConfig;
@@ -64,40 +69,51 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
   onMemoriesComplete,
 }) => {
   const items: WizardMemoryItem[] = React.useMemo(() => {
-    if (memories && memories.length > 0) return memories;
-    if (photosFallback && photosFallback.length > 0) {
-      return photosFallback.map((p, idx) => ({
+    let sourceList: WizardMemoryItem[] = [];
+    if (memories && memories.length > 0) {
+      sourceList = memories;
+    } else if (photosFallback && photosFallback.length > 0) {
+      sourceList = photosFallback.map((p, idx) => ({
         id: p.id,
-        type: 'photo',
+        type: isMediaVideo(p as any) ? 'video' : 'photo',
         fileUrl: p.fileUrl,
         caption: p.caption,
         displayOrder: idx,
       }));
+    } else {
+      sourceList = [
+        {
+          id: 'demo-1',
+          type: 'photo',
+          fileUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=1200&q=80',
+          title: 'Our Special Day',
+          caption: 'That day we could not stop laughing 😂',
+          date: '2023',
+          location: 'Favorite Beach Spot',
+          frameStyle: 'polaroid',
+          displayOrder: 0,
+        },
+        {
+          id: 'demo-2',
+          type: 'photo',
+          fileUrl: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80',
+          title: 'Unforgettable Moments',
+          caption: 'One of my absolute favorite memories with you ❤️',
+          date: '2024',
+          location: 'Sunset Viewpoint',
+          frameStyle: 'scrapbook',
+          displayOrder: 1,
+        },
+      ];
     }
-    return [
-      {
-        id: 'demo-1',
-        type: 'photo',
-        fileUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=1200&q=80',
-        title: 'Our Special Day',
-        caption: 'That day we could not stop laughing 😂',
-        date: '2023',
-        location: 'Favorite Beach Spot',
-        frameStyle: 'polaroid',
-        displayOrder: 0,
-      },
-      {
-        id: 'demo-2',
-        type: 'photo',
-        fileUrl: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80',
-        title: 'Unforgettable Moments',
-        caption: 'One of my absolute favorite memories with you ❤️',
-        date: '2024',
-        location: 'Sunset Viewpoint',
-        frameStyle: 'scrapbook',
-        displayOrder: 1,
-      },
-    ];
+
+    return sourceList.map((item, idx) => ({
+      ...item,
+      id: item.id || `mem-${idx}`,
+      type: isMediaVideo(item) ? 'video' : 'photo',
+      fileUrl: item.fileUrl || (item as any).videoUrl || (item as any).file_url || '',
+      displayOrder: item.displayOrder ?? idx,
+    }));
   }, [memories, photosFallback]);
 
   const introText = config?.introText || 'Some moments I never want to forget...';
@@ -111,8 +127,6 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
   const [isAutoPlaying, setIsAutoPlaying] = useState(config?.autoPlay ?? false);
 
   const [isPlayingVideo, setIsPlayingVideo] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const [videoProgress, setVideoProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const [zoomedPhoto, setZoomedPhoto] = useState<WizardMemoryItem | null>(null);
@@ -136,22 +150,6 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
       if (timer) clearTimeout(timer);
     };
   }, [phase, currentIndex, isAutoPlaying, zoomedPhoto, fullscreenVideo, isPlayingVideo, currentDuration]);
-
-  useEffect(() => {
-    let animId: number | null = null;
-    const updateProgress = () => {
-      if (videoRef.current && !videoRef.current.paused && videoRef.current.duration) {
-        setVideoProgress((videoRef.current.currentTime / videoRef.current.duration) * 100);
-        animId = requestAnimationFrame(updateProgress);
-      }
-    };
-    if (isPlayingVideo) {
-      animId = requestAnimationFrame(updateProgress);
-    }
-    return () => {
-      if (animId) cancelAnimationFrame(animId);
-    };
-  }, [isPlayingVideo]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -200,26 +198,6 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
     if (touchEndX.current - touchStartX.current > 50) {
       handlePrev();
     }
-  };
-
-  const togglePlayVideo = () => {
-    if (!videoRef.current) return;
-    if (isPlayingVideo) {
-      videoRef.current.pause();
-      setIsPlayingVideo(false);
-    } else {
-      videoRef.current.play().then(() => {
-        setIsPlayingVideo(true);
-      }).catch((err) => {
-        console.error('Video play error:', err);
-      });
-    }
-  };
-
-  const toggleMuteVideo = () => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = !isMuted;
-    setIsMuted(!isMuted);
   };
 
   const renderPortraitLayers = (item: WizardMemoryItem) => {
@@ -346,73 +324,32 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
     const playableUrl = getPlayableVideoUrl(rawVideoUrl);
 
     return (
-      <div className="relative w-full max-w-md mx-auto">
+      <div className="relative w-full max-w-md mx-auto space-y-2">
         <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-black border border-pink-500/30">
           <video
             key={playableUrl}
             ref={videoRef}
             src={playableUrl}
             controls
-            autoPlay
             playsInline
-            preload="auto"
-            muted={isMuted}
-            poster={item.thumbnailUrl || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=800&q=80'}
-            onLoadedData={(e) => {
-              e.currentTarget.play().then(() => setIsPlayingVideo(true)).catch(() => {});
-            }}
+            preload="metadata"
+            poster={item.thumbnailUrl}
             onPlay={() => setIsPlayingVideo(true)}
             onPause={() => setIsPlayingVideo(false)}
-            onEnded={() => {
-              setIsPlayingVideo(false);
-              setVideoProgress(100);
-            }}
-            className="w-full h-auto max-h-[240px] sm:max-h-[260px] object-contain mx-auto"
+            onEnded={() => setIsPlayingVideo(false)}
+            className="w-full h-auto max-h-[250px] sm:max-h-[280px] object-contain mx-auto rounded-2xl"
           >
             <source src={playableUrl} type="video/mp4" />
             <source src={playableUrl} type="video/webm" />
+            <source src={playableUrl} type="video/quicktime" />
             Your browser does not support HTML5 video playback.
           </video>
-
-          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2.5 flex flex-col gap-1.5 z-20">
-            <div className="w-full bg-white/20 h-1 rounded-full overflow-hidden">
-              <div className="bg-pink-500 h-full" style={{ width: `${videoProgress}%` }} />
-            </div>
-
-            <div className="flex items-center justify-between text-white text-xs">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={togglePlayVideo}
-                  className="p-1.5 rounded-full bg-pink-500 text-white"
-                >
-                  {isPlayingVideo ? <Pause className="h-3.5 w-3.5 fill-white" /> : <Play className="h-3.5 w-3.5 fill-white ml-0.5" />}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={toggleMuteVideo}
-                  className="p-1 rounded-full bg-slate-800/80 text-white"
-                >
-                  {isMuted ? <VolumeX className="h-3.5 w-3.5 text-rose-400" /> : <Volume2 className="h-3.5 w-3.5 text-emerald-400" />}
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setFullscreenVideo(item)}
-                className="p-1 rounded-full bg-slate-800/80 text-white"
-              >
-                <Maximize2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
         </div>
 
         {(item.title || item.caption) && (
           <div className="mt-2 text-center space-y-0.5 px-2">
             {item.title && <h4 className="font-heading text-sm font-bold text-white truncate">{item.title}</h4>}
-            {item.caption && <p className="font-serif text-xs italic text-slate-300 line-clamp-1">"{item.caption}"</p>}
+            {item.caption && <p className="font-serif text-xs italic text-slate-300 line-clamp-2">"{item.caption}"</p>}
           </div>
         )}
       </div>

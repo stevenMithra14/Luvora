@@ -6,7 +6,7 @@ import { uploadPhotoFile } from '../../../services/uploadService';
 import { resolveMediaUrl } from '../../../services/giftService';
 
 export const PhotoUploader: React.FC = () => {
-  const { data, setPhotos } = useWizard();
+  const { data, setPhotos, setMemories } = useWizard();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -20,6 +20,7 @@ export const PhotoUploader: React.FC = () => {
     setUploadProgress(10);
 
     const newPhotos: WizardPhoto[] = [...data.photos];
+    const newMemories = [...(data.memories || [])];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -28,10 +29,22 @@ export const PhotoUploader: React.FC = () => {
           setUploadProgress(percent);
         });
 
+        const photoId = 'photo-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
         newPhotos.push({
-          id: 'photo-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+          id: photoId,
           fileUrl: res.url,
           caption: file.name.split('.')[0] || '',
+        });
+
+        newMemories.push({
+          id: photoId,
+          type: 'photo',
+          fileUrl: res.url,
+          title: file.name.split('.')[0] || 'Photo Memory',
+          caption: '',
+          date: '',
+          frameStyle: data.memoryConfig?.frameStyle || 'polaroid',
+          displayOrder: newMemories.length,
         });
       } catch (err: any) {
         setErrorMessage(err.message || 'Failed to upload photo.');
@@ -39,6 +52,7 @@ export const PhotoUploader: React.FC = () => {
     }
 
     setPhotos(newPhotos);
+    setMemories(newMemories);
     setIsUploading(false);
     setUploadProgress(0);
   };

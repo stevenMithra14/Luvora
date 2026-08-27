@@ -178,6 +178,16 @@ export async function fetchSpotifyOEmbed(spotifyUrl: string): Promise<{
 }
 
 export async function publishGiftApi(data: WizardData): Promise<PublishedGiftResponse> {
+  const finalMemories = (data.memories && data.memories.length > 0)
+    ? data.memories
+    : (data.photos || []).map((p, idx) => ({
+        id: p.id || `photo-${idx}`,
+        type: 'photo',
+        fileUrl: p.fileUrl,
+        caption: p.caption || '',
+        displayOrder: idx,
+      }));
+
   const payload = {
     occasion_type: data.occasion || 'general',
     recipient_name: (data.recipientName || 'Someone Special').trim(),
@@ -209,10 +219,10 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
         display_order: idx,
         is_enabled: true
       })),
-      ...(data.memories && data.memories.length > 0 ? [{
+      ...(finalMemories.length > 0 ? [{
         interactive_type: 'photo_memories',
         configuration_json: {
-          memories: data.memories,
+          memories: finalMemories,
           memoryConfig: data.memoryConfig
         },
         display_order: data.interactives.length,
