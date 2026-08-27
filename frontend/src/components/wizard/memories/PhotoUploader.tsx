@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, Image as ImageIcon, Trash2, ArrowUp, ArrowDown, Loader2, AlertCircle } from 'lucide-react';
-import { useWizard, WizardPhoto } from '../../../context/WizardContext';
+import { useWizard } from '../../../context/WizardContext';
 import { uploadPhotoFile } from '../../../services/uploadService';
 import { resolveMediaUrl } from '../../../services/giftService';
 
@@ -13,48 +13,54 @@ export const PhotoUploader: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  const handleFiles = async (files: FileList | File[]) => {
-    if (!files || files.length === 0) return;
+  const handleFiles = async (filesList: FileList | File[]) => {
+    if (!filesList || filesList.length === 0) return;
     setErrorMessage('');
     setIsUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(15);
 
-    const newPhotos: WizardPhoto[] = [...data.photos];
-    const newMemories = [...(data.memories || [])];
+    const filesArray = Array.from(filesList);
+    let completedCount = 0;
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      try {
+    try {
+      const uploadPromises = filesArray.map(async (file, idx) => {
         const res = await uploadPhotoFile(file, (percent) => {
-          setUploadProgress(percent);
+          completedCount = Math.max(completedCount, Math.round(((idx + percent / 100) / filesArray.length) * 100));
+          setUploadProgress(completedCount);
         });
 
-        const photoId = 'photo-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
-        newPhotos.push({
-          id: photoId,
-          fileUrl: res.url,
-          caption: file.name.split('.')[0] || '',
-        });
+        const photoId = 'photo-' + Date.now() + '-' + idx + '-' + Math.random().toString(36).substring(2, 7);
+        return {
+          photo: {
+            id: photoId,
+            fileUrl: res.url,
+            caption: file.name.split('.')[0] || '',
+          },
+          memory: {
+            id: photoId,
+            type: 'photo' as const,
+            fileUrl: res.url,
+            title: file.name.split('.')[0] || 'Photo Memory',
+            caption: '',
+            date: '',
+            frameStyle: data.memoryConfig?.frameStyle || 'polaroid',
+            displayOrder: (data.memories || []).length + idx,
+          }
+        };
+      });
 
-        newMemories.push({
-          id: photoId,
-          type: 'photo',
-          fileUrl: res.url,
-          title: file.name.split('.')[0] || 'Photo Memory',
-          caption: '',
-          date: '',
-          frameStyle: data.memoryConfig?.frameStyle || 'polaroid',
-          displayOrder: newMemories.length,
-        });
-      } catch (err: any) {
-        setErrorMessage(err.message || 'Failed to upload photo.');
-      }
+      const results = await Promise.all(uploadPromises);
+      const addedPhotos = results.map(r => r.photo);
+      const addedMemories = results.map(r => r.memory);
+
+      setPhotos([...data.photos, ...addedPhotos]);
+      setMemories([...(data.memories || []), ...addedMemories]);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to upload photo.');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
-
-    setPhotos(newPhotos);
-    setMemories(newMemories);
-    setIsUploading(false);
-    setUploadProgress(0);
   };
 
   const handleDragOver = (e: React.DragEvent) => {

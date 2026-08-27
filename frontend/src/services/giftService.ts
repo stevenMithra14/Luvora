@@ -1,5 +1,6 @@
 import { WizardData } from '../context/WizardContext';
 import { API_BASE_URL } from '../utils/constants';
+import { compressImageIfNeeded } from './uploadService';
 
 export const parseYouTubeVideoId = (rawUrl?: string): string | null => {
   if (!rawUrl || typeof rawUrl !== 'string') return null;
@@ -85,9 +86,13 @@ export interface PublicGiftResponse {
   goodies: PublicGoodieResponse[];
 }
 
-export async function uploadPhotoApi(file: File | Blob, filename = 'photo.png'): Promise<{ status: string; url: string; filename: string }> {
+export async function uploadPhotoApi(rawFile: File | Blob, filename = 'photo.jpg'): Promise<{ status: string; url: string; filename: string }> {
+  let fileToUpload = rawFile;
+  if (rawFile instanceof File) {
+    fileToUpload = await compressImageIfNeeded(rawFile);
+  }
   const formData = new FormData();
-  formData.append('file', file, filename);
+  formData.append('file', fileToUpload, filename);
 
   const response = await fetch(`${API_BASE_URL}/upload/photo`, {
     method: 'POST',

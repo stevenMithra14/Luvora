@@ -15,12 +15,70 @@ const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25MB
 const ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'ogv', 'mkv'];
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 
+export async function compressImageIfNeeded(file: File, maxDim = 1920, quality = 0.82): Promise<File> {
+  if (!file || !file.type || !file.type.startsWith('image/') || file.size < 400 * 1024) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+          const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+          resolve(compressedFile);
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
+}
+
 export async function uploadPhotoFile(
-  file: File,
+  rawFile: File,
   onProgress?: (percent: number) => void
 ): Promise<UploadResponse> {
+  const file = await compressImageIfNeeded(rawFile);
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
-  if (ext && !ALLOWED_PHOTO_EXTENSIONS.includes(ext)) {
+  if (ext && !ALLOWED_PHOTO_EXTENSIONS.includes(ext) && ext !== 'jpeg' && ext !== 'jpg') {
     throw new Error('Unsupported image format. Allowed formats: JPG, JPEG, PNG, WEBP.');
   }
 
@@ -31,7 +89,7 @@ export async function uploadPhotoFile(
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', file, file.name);
 
     xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable && onProgress) {

@@ -90,7 +90,7 @@ export const MemoryEditor: React.FC = () => {
     }
   };
 
-  // Handle Photo Upload (Keep exact photo upload functionality)
+  // Handle Photo Upload (Fast Parallel Upload with Auto-Compression)
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -104,39 +104,39 @@ export const MemoryEditor: React.FC = () => {
     setUploadError(null);
 
     try {
-      const newMemories: WizardMemoryItem[] = [];
-      const newPhotos: any[] = [];
       const slotsRemaining = 10 - memories.length;
-      const countToUpload = Math.min(files.length, slotsRemaining);
+      const filesToUpload = Array.from(files).slice(0, slotsRemaining);
 
-      for (let i = 0; i < countToUpload; i++) {
-        const file = files[i];
-        if (file.size > 20 * 1024 * 1024) {
-          setUploadError(`Photo file '${file.name}' exceeds 20MB limit.`);
-          continue;
+      const uploadPromises = filesToUpload.map(async (file, i) => {
+        if (file.size > 25 * 1024 * 1024) {
+          throw new Error(`Photo file '${file.name}' exceeds limit.`);
         }
-
         const res = await uploadPhotoApi(file);
         const returnedUrl = res.url;
         const memoryId = `mem-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
-        
-        newMemories.push({
-          id: memoryId,
-          type: 'photo',
-          fileUrl: returnedUrl,
-          title: file.name.split('.')[0] || 'Photo Memory',
-          caption: '',
-          date: '',
-          frameStyle: memoryConfig.frameStyle || 'polaroid',
-          displayOrder: memories.length + i,
-        });
 
-        newPhotos.push({
-          id: `photo-${Date.now()}-${i}`,
-          fileUrl: returnedUrl,
-          caption: file.name.split('.')[0] || '',
-        });
-      }
+        return {
+          memory: {
+            id: memoryId,
+            type: 'photo' as const,
+            fileUrl: returnedUrl,
+            title: file.name.split('.')[0] || 'Photo Memory',
+            caption: '',
+            date: '',
+            frameStyle: memoryConfig.frameStyle || 'polaroid',
+            displayOrder: memories.length + i,
+          },
+          photo: {
+            id: `photo-${Date.now()}-${i}`,
+            fileUrl: returnedUrl,
+            caption: file.name.split('.')[0] || '',
+          },
+        };
+      });
+
+      const results = await Promise.all(uploadPromises);
+      const newMemories = results.map((r) => r.memory);
+      const newPhotos = results.map((r) => r.photo);
 
       setMemories([...memories, ...newMemories]);
       setPhotos([...data.photos, ...newPhotos]);
