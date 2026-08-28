@@ -1,16 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, Eye } from 'lucide-react';
 import { useWizard } from '../context/WizardContext';
 import { WizardProgress } from '../components/wizard/WizardProgress';
 import { MemoryEditor } from '../components/wizard/editor/MemoryEditor';
 import { AudioUploader } from '../components/wizard/memories/AudioUploader';
 import { LiveDevicePreview } from '../components/wizard/preview/LiveDevicePreview';
+import { MobileGiftPreviewModal } from '../components/wizard/preview/MobileGiftPreviewModal';
 
 export const CreateGiftStep4: React.FC = () => {
   const navigate = useNavigate();
   const { data, nextStep, prevStep } = useWizard();
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   useEffect(() => {
     if (!data.occasion) {
@@ -79,16 +81,33 @@ export const CreateGiftStep4: React.FC = () => {
             <span>Back</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleContinue}
-            className="w-full sm:w-auto justify-center inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-300"
-          >
-            <span>Continue to Digital Goodies</span>
-            <ArrowRight className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setShowMobilePreview(true)}
+              className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-5 py-3 rounded-full border border-pink-500/40 bg-pink-500/10 text-xs font-bold text-pink-300 hover:bg-pink-500/20 hover:text-white transition-all cursor-pointer shadow-md"
+            >
+              <Eye className="h-4 w-4 text-pink-400" />
+              <span>👀 Preview Gift</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleContinue}
+              className="w-full sm:w-auto justify-center inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-300"
+            >
+              <span>Continue to Digital Goodies</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Fullscreen Mobile Gift Preview Modal */}
+      <MobileGiftPreviewModal
+        isOpen={showMobilePreview}
+        onClose={() => setShowMobilePreview(false)}
+      />
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { useWizard } from '../context/WizardContext';
 import { WizardProgress } from '../components/wizard/WizardProgress';
 import { LiveDevicePreview } from '../components/wizard/preview/LiveDevicePreview';
 import { PublishSuccessModal } from '../components/wizard/preview/PublishSuccessModal';
+import { MobileGiftPreviewModal } from '../components/wizard/preview/MobileGiftPreviewModal';
 import { publishGiftApi } from '../services/giftService';
 
 export const CreateGiftPreview: React.FC = () => {
@@ -15,6 +16,7 @@ export const CreateGiftPreview: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [publishSuccessData, setPublishSuccessData] = useState<{ publicId: string; editToken: string } | null>(null);
   const [apiError, setApiError] = useState<string>('');
 
@@ -191,6 +193,29 @@ export const CreateGiftPreview: React.FC = () => {
                 <span>{apiError}</span>
               </div>
             )}
+
+            {/* Prominent Mobile Preview Callout Box */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-pink-500/15 via-purple-500/15 to-rose-500/15 border border-pink-500/30 shadow-xl space-y-3 text-center">
+              <div className="space-y-1">
+                <h3 className="font-heading text-sm sm:text-base font-extrabold text-white">
+                  Gift Ready! 🎁
+                </h3>
+                <p className="text-xs text-slate-300 max-w-sm mx-auto">
+                  Preview your complete interactive gift experience before sending it to your recipient.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowMobilePreview(true)}
+                  className="w-full sm:w-auto px-6 py-3 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 text-xs font-extrabold text-white shadow-lg shadow-pink-500/30 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Eye className="h-4 w-4 text-white" />
+                  <span>👀 PREVIEW GIFT</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* RIGHT 50%: Phone & Laptop Device Preview */}
@@ -212,19 +237,30 @@ export const CreateGiftPreview: React.FC = () => {
             <span>Back</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handlePublish}
-            disabled={isPublishing}
-            className={`w-full sm:w-auto justify-center inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white shadow-xl transition-all duration-300 cursor-pointer ${
-              isPublishing
-                ? 'bg-slate-800 opacity-60 cursor-wait'
-                : 'bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-105 active:scale-95'
-            }`}
-          >
-            <Send className="h-4 w-4" />
-            <span>{isPublishing ? 'Publishing...' : 'Send Gift Now'}</span>
-          </button>
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setShowMobilePreview(true)}
+              className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-5 py-3 rounded-full border border-pink-500/40 bg-pink-500/10 text-xs font-bold text-pink-300 hover:bg-pink-500/20 hover:text-white transition-all cursor-pointer shadow-md"
+            >
+              <Eye className="h-4 w-4 text-pink-400" />
+              <span>👀 Preview Gift</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePublish}
+              disabled={isPublishing}
+              className={`w-full sm:w-auto justify-center inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white shadow-xl transition-all duration-300 cursor-pointer ${
+                isPublishing
+                  ? 'bg-slate-800 opacity-60 cursor-wait'
+                  : 'bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-105 active:scale-95'
+              }`}
+            >
+              <Send className="h-4 w-4" />
+              <span>{isPublishing ? 'Publishing...' : 'Send Gift Now'}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -237,6 +273,13 @@ export const CreateGiftPreview: React.FC = () => {
           onClose={() => setPublishSuccessData(null)}
         />
       )}
+
+      {/* Fullscreen Mobile Gift Preview Modal */}
+      <MobileGiftPreviewModal
+        isOpen={showMobilePreview}
+        onClose={() => setShowMobilePreview(false)}
+        onSendGift={handlePublish}
+      />
     </div>
   );
 };

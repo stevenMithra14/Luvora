@@ -43,6 +43,57 @@ export const RecipientGiftView: React.FC = () => {
     <div
       className={`w-full min-h-full py-2 px-1.5 flex flex-col justify-between transition-colors duration-500 ${theme.background} text-white relative overflow-x-hidden`}
     >
+      {/* Quick Stage Jump Navigation Tabs */}
+      <div className="flex items-center justify-center gap-1 py-1 px-2 overflow-x-auto scrollbar-none bg-slate-950/80 border border-slate-800 rounded-2xl mb-2 text-[10px] font-bold z-40 shrink-0">
+        <button
+          type="button"
+          onClick={() => setActiveStage('box')}
+          className={`px-2 py-1 rounded-xl transition-all cursor-pointer ${
+            activeStage === 'box' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          📦 Unboxing
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveStage('cake')}
+          className={`px-2 py-1 rounded-xl transition-all cursor-pointer ${
+            activeStage === 'cake' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          🎂 3D Cake
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveStage('games')}
+          className={`px-2 py-1 rounded-xl transition-all cursor-pointer ${
+            activeStage === 'games' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          💌 Message
+        </button>
+        {hasGoodies && (
+          <button
+            type="button"
+            onClick={() => setActiveStage('goodies')}
+            className={`px-2 py-1 rounded-xl transition-all cursor-pointer ${
+              activeStage === 'goodies' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            🎁 Goodies
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setActiveStage('memories')}
+          className={`px-2 py-1 rounded-xl transition-all cursor-pointer ${
+            activeStage === 'memories' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          📸 Memories
+        </button>
+      </div>
+
       {/* Mini Cassette & Vinyl Music Player with Album Cover Artwork */}
       {activeStage !== 'box' && (
         <FloatingCassettePlayer
