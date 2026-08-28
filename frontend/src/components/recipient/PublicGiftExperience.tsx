@@ -82,6 +82,10 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
   const spotifyModule = (giftData.interactives || []).find((i) => i.interactive_type === 'spotify_music');
   const spotifyTrackFromApi = spotifyModule?.configuration_json?.spotifyTrack;
 
+  const cakeBoxModule = (giftData.interactives || []).find((i) => i.interactive_type === 'cake_box_config');
+  const cakeConfigFromApi = cakeBoxModule?.configuration_json?.cakeConfig;
+  const giftBoxConfigFromApi = cakeBoxModule?.configuration_json?.giftBoxConfig;
+
   return (
     <div className={`min-h-screen w-full transition-colors duration-700 selection:bg-pink-500/30 ${theme.background} text-slate-100 font-sans relative overflow-x-hidden max-w-full`}>
       {/* Corner Cassette & Vinyl Music Player with Album Cover Artwork */}
@@ -105,6 +109,7 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
             className="min-h-screen flex flex-col items-center justify-center p-4"
           >
             <GiftBoxUnboxing
+              config={giftBoxConfigFromApi}
               recipientName={giftData.recipient_name}
               isPasswordProtected={giftData.password_enabled || giftData.is_locked}
               passwordHint={giftData.password_hint}
@@ -125,6 +130,7 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
             className="min-h-screen flex flex-col items-center justify-center p-4"
           >
             <CakeStage
+              config={cakeConfigFromApi}
               recipientName={giftData.recipient_name}
               onCakeComplete={handleCakeComplete}
             />

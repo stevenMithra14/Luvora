@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Sparkles, Layout, Palette, Type, Image as ImageIcon, Gift, PartyPopper } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, Layout, Palette, Type, Image as ImageIcon, Gift, PartyPopper, ChevronRight } from 'lucide-react';
 import { useWizard } from '../context/WizardContext';
 import { WizardProgress } from '../components/wizard/WizardProgress';
 import { CoverControls } from '../components/wizard/editor/CoverControls';
@@ -19,6 +19,7 @@ export const CreateGiftStep3: React.FC = () => {
   const { data, nextStep, prevStep } = useWizard();
 
   const [activeTab, setActiveTab] = useState<'box' | 'cake' | 'cover' | 'message' | 'theme' | 'typography' | 'background' | 'animation'>('box');
+  const tabsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!data.occasion) {
@@ -34,6 +35,11 @@ export const CreateGiftStep3: React.FC = () => {
   const handleBack = () => {
     prevStep();
     navigate('/create/person');
+  };
+
+  const handleTabClick = (tabId: typeof activeTab, e: React.MouseEvent<HTMLButtonElement>) => {
+    setActiveTab(tabId);
+    e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   };
 
   const tabs = [
@@ -76,28 +82,39 @@ export const CreateGiftStep3: React.FC = () => {
               </p>
             </motion.div>
 
-            {/* Customization Category Tabs Bar */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-slate-800">
-              {tabs.map((tab) => {
-                const IconComp = tab.icon;
-                const isActive = activeTab === tab.id;
+            {/* Customization Category Tabs Bar with Horizontal Scroll Cues */}
+            <div className="relative group">
+              {/* Category Buttons Track */}
+              <div
+                ref={tabsRef}
+                className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none border-b border-slate-800 scroll-smooth pr-10"
+              >
+                {tabs.map((tab) => {
+                  const IconComp = tab.icon;
+                  const isActive = activeTab === tab.id;
 
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
-                      isActive
-                        ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md shadow-pink-500/20'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                    }`}
-                  >
-                    <IconComp className="h-3.5 w-3.5" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={(e) => handleTabClick(tab.id as any, e)}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer transition-all shrink-0 ${
+                        isActive
+                          ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md shadow-pink-500/25 scale-105'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <IconComp className="h-3.5 w-3.5" />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Right Edge Fade Mask + Scroll Indicator Hint Icon */}
+              <div className="absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-slate-950 via-slate-950/80 to-transparent pointer-events-none flex items-center justify-end pr-1">
+                <ChevronRight className="h-4 w-4 text-pink-400 animate-pulse" />
+              </div>
             </div>
 
             {/* Active Control Body Box */}
@@ -145,3 +162,4 @@ export const CreateGiftStep3: React.FC = () => {
     </div>
   );
 };
+

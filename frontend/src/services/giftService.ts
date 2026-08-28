@@ -267,7 +267,16 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
         },
         display_order: data.interactives.length + 1,
         is_enabled: true
-      }] : [])
+      }] : []),
+      {
+        interactive_type: 'cake_box_config',
+        configuration_json: {
+          cakeConfig: data.cakeConfig,
+          giftBoxConfig: data.giftBoxConfig
+        },
+        display_order: data.interactives.length + 2,
+        is_enabled: true
+      }
     ],
     goodies: (data.goodies || []).map((g, idx) => ({
       goodie_type: g.goodieType,
@@ -344,7 +353,16 @@ export async function updateGiftApi(editToken: string, data: WizardData): Promis
         },
         display_order: data.interactives.length,
         is_enabled: true
-      }] : [])
+      }] : []),
+      {
+        interactive_type: 'cake_box_config',
+        configuration_json: {
+          cakeConfig: data.cakeConfig,
+          giftBoxConfig: data.giftBoxConfig
+        },
+        display_order: data.interactives.length + 1,
+        is_enabled: true
+      }
     ],
     goodies: (data.goodies || []).map((g, idx) => ({
       goodie_type: g.goodieType,
