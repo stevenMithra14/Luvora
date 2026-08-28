@@ -37,7 +37,7 @@ ALLOWED_INTERACTIVE_TYPES = {
     'memory_match', 'surprise_wheel', 'would_you_rather', 'this_or_that', 'who_said_it',
     'guess_age', 'mystery_box', 'countdown', 'timeline', 'secret_message', 'surprise_button',
     'slideshow', 'final_message', 'photo_memories', 'video_memories', 'mixed_memories',
-    'cake', 'love_lock', 'gift_box', 'candle', 'spotify_music'
+    'cake', 'love_lock', 'gift_box', 'candle', 'spotify_music', 'cake_box_config'
 }
 
 # Whitelist of allowed digital goodie types

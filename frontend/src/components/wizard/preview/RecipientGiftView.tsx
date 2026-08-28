@@ -19,7 +19,14 @@ export const RecipientGiftView: React.FC = () => {
   const displayName = data.recipientName.trim() || 'Someone Special';
 
   const finalModule = data.interactives.find((i) => i.interactiveType === 'final_message');
-  const gamesAndSurprises = data.interactives.filter((i) => i.interactiveType !== 'final_message' && i.interactiveType !== 'slideshow');
+  const gamesAndSurprises = data.interactives.filter(
+    (i) =>
+      i.interactiveType !== 'final_message' &&
+      i.interactiveType !== 'slideshow' &&
+      i.interactiveType !== 'photo_memories' &&
+      i.interactiveType !== 'spotify_music' &&
+      i.interactiveType !== 'cake_box_config'
+  );
 
   const messageLines = (data.message || '').split('\n').filter((l) => l.trim().length > 0);
   const hasGoodies = (data.goodies || []).some((g) => g.isEnabled !== false);

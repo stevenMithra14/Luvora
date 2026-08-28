@@ -71,7 +71,14 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
   };
 
   const finalModule = (giftData.interactives || []).find((i) => i.interactive_type === 'final_message');
-  const gamesAndSurprises = (giftData.interactives || []).filter((i) => i.interactive_type !== 'final_message' && i.interactive_type !== 'slideshow');
+  const gamesAndSurprises = (giftData.interactives || []).filter(
+    (i) =>
+      i.interactive_type !== 'final_message' &&
+      i.interactive_type !== 'slideshow' &&
+      i.interactive_type !== 'photo_memories' &&
+      i.interactive_type !== 'spotify_music' &&
+      i.interactive_type !== 'cake_box_config'
+  );
 
   const messageLines = (giftData.message || '').split('\n').filter((l) => l.trim().length > 0);
 
