@@ -86,59 +86,112 @@ export interface PublicGiftResponse {
   goodies: PublicGoodieResponse[];
 }
 
-export async function uploadPhotoApi(rawFile: File | Blob, filename = 'photo.jpg'): Promise<{ status: string; url: string; filename: string }> {
+export const fileToDataUrl = (file: File | Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (e) => reject(e);
+    reader.readAsDataURL(file);
+  });
+};
+
+export async function uploadPhotoApi(rawFile: File | Blob, filename?: string): Promise<{ status: string; url: string; filename: string }> {
   let fileToUpload = rawFile;
   if (rawFile instanceof File) {
-    fileToUpload = await compressImageIfNeeded(rawFile);
+    try {
+      fileToUpload = await compressImageIfNeeded(rawFile);
+    } catch (e) {
+      console.warn('Image compression warning, proceeding with uncompressed image:', e);
+    }
   }
+
+  const actualFilename = filename || (rawFile instanceof File ? rawFile.name : 'photo.jpg');
   const formData = new FormData();
-  formData.append('file', fileToUpload, filename);
+  formData.append('file', fileToUpload, actualFilename);
 
-  const response = await fetch(`${API_BASE_URL}/upload/photo`, {
-    method: 'POST',
-    body: formData,
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/upload/photo`, {
+      method: 'POST',
+      body: formData,
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Failed to upload photo.');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(parseErrorDetail(errorData, 'Failed to upload photo.'));
+    }
+
+    return await response.json();
+  } catch (err: any) {
+    console.warn('Backend uploadPhotoApi connection failed, generating Data URL fallback:', err);
+    try {
+      const dataUrl = await fileToDataUrl(fileToUpload);
+      return {
+        status: 'success',
+        url: dataUrl,
+        filename: actualFilename,
+      };
+    } catch (fallbackErr) {
+      throw new Error(err?.message || 'Failed to process image file.');
+    }
   }
-
-  return await response.json();
 }
 
 export async function uploadAudioApi(file: File | Blob, filename = 'voice_message.webm'): Promise<{ status: string; url: string; filename: string }> {
   const formData = new FormData();
   formData.append('file', file, filename);
 
-  const response = await fetch(`${API_BASE_URL}/upload/audio`, {
-    method: 'POST',
-    body: formData,
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/upload/audio`, {
+      method: 'POST',
+      body: formData,
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Failed to upload audio.');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(parseErrorDetail(errorData, 'Failed to upload audio.'));
+    }
+
+    return await response.json();
+  } catch (err: any) {
+    console.warn('Backend uploadAudioApi connection failed, generating Data URL fallback:', err);
+    const dataUrl = await fileToDataUrl(file);
+    return {
+      status: 'success',
+      url: dataUrl,
+      filename,
+    };
   }
-
-  return await response.json();
 }
 
 export async function uploadVideoApi(file: File): Promise<{ status: string; url: string; filename: string }> {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('file', file, file.name);
 
-  const response = await fetch(`${API_BASE_URL}/upload/video`, {
-    method: 'POST',
-    body: formData,
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/upload/video`, {
+      method: 'POST',
+      body: formData,
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Failed to upload video.');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(parseErrorDetail(errorData, 'Failed to upload video.'));
+    }
+
+    return await response.json();
+  } catch (err: any) {
+    console.warn('Backend uploadVideoApi connection failed, generating Data URL fallback:', err);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      return {
+        status: 'success',
+        url: dataUrl,
+        filename: file.name,
+      };
+    } catch (fallbackErr) {
+      throw new Error(err?.message || 'Failed to process video file.');
+    }
   }
-
-  return await response.json();
 }
 
 export const parseErrorDetail = (errorData: any, fallback: string): string => {

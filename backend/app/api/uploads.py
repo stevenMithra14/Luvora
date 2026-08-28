@@ -6,10 +6,16 @@ router = APIRouter(prefix="/upload", tags=["Uploads"])
 
 ALLOWED_IMAGE_TYPES = {
     "image/jpeg": [".jpg", ".jpeg"],
+    "image/jpg": [".jpg", ".jpeg"],
+    "image/pjpeg": [".jpg", ".jpeg"],
     "image/png": [".png"],
-    "image/webp": [".webp"]
+    "image/x-png": [".png"],
+    "image/webp": [".webp"],
+    "image/heic": [".heic"],
+    "image/heif": [".heif"],
+    "application/octet-stream": [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"]
 }
-MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25 MB
 
 ALLOWED_AUDIO_TYPES = {
     "audio/mpeg": [".mp3"],
@@ -20,16 +26,18 @@ ALLOWED_AUDIO_TYPES = {
     "audio/mp4": [".m4a"],
     "audio/x-m4a": [".m4a"],
     "audio/aac": [".aac"],
-    "audio/m4a": [".m4a"]
+    "audio/m4a": [".m4a"],
+    "application/octet-stream": [".mp3", ".wav", ".ogg", ".webm", ".m4a", ".aac"]
 }
-MAX_AUDIO_SIZE = 15 * 1024 * 1024  # 15 MB
+MAX_AUDIO_SIZE = 25 * 1024 * 1024  # 25 MB
 
 ALLOWED_VIDEO_TYPES = {
     "video/mp4": [".mp4"],
     "video/webm": [".webm"],
     "video/quicktime": [".mov"],
     "video/ogg": [".ogv"],
-    "video/x-matroska": [".mkv"]
+    "video/x-matroska": [".mkv"],
+    "application/octet-stream": [".mp4", ".webm", ".mov", ".ogv", ".mkv"]
 }
 MAX_VIDEO_SIZE = 50 * 1024 * 1024  # 50 MB
 
@@ -41,10 +49,10 @@ async def upload_photo(file: UploadFile = File(...)):
     ext = os.path.splitext(file.filename or "")[1].lower()
     
     # Validate Content Type & Extension
-    if file.content_type not in ALLOWED_IMAGE_TYPES and ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+    if file.content_type not in ALLOWED_IMAGE_TYPES and ext not in [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid image file format. Supported formats: JPG, JPEG, PNG, WEBP."
+            detail="Invalid image file format. Supported formats: JPG, JPEG, PNG, WEBP, HEIC."
         )
 
     # Read and check size
@@ -52,7 +60,7 @@ async def upload_photo(file: UploadFile = File(...)):
     if len(contents) > MAX_IMAGE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File size exceeds maximum allowed photo limit of 10MB."
+            detail="File size exceeds maximum allowed photo limit of 25MB."
         )
 
     # Reset file pointer and save via Storage Provider Abstraction

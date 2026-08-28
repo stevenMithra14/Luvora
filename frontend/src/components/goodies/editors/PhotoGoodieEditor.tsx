@@ -26,7 +26,7 @@ export const PhotoGoodieEditor: React.FC<PhotoGoodieEditorProps> = ({ goodie, on
     setIsUploading(true);
     setUploadError('');
     try {
-      const res = await uploadPhotoApi(file);
+      const res = await uploadPhotoApi(file, file.name);
       setPhotoUrl(res.url);
     } catch (err: any) {
       setUploadError(err.message || 'Failed to upload image.');

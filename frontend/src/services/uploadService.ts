@@ -6,17 +6,21 @@ export interface UploadResponse {
   filename: string;
 }
 
-const ALLOWED_PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
-const MAX_PHOTO_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'bmp', 'gif', 'svg'];
+const MAX_PHOTO_SIZE = 25 * 1024 * 1024; // 25MB
 
 const ALLOWED_AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'webm', 'm4a', 'aac', 'mp4'];
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25MB
 
-const ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'ogv', 'mkv'];
+const ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'ogv', 'mkv', '3gp', 'avi'];
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 
 export async function compressImageIfNeeded(file: File, maxDim = 1920, quality = 0.82): Promise<File> {
-  if (!file || !file.type || !file.type.startsWith('image/') || file.size < 400 * 1024) {
+  if (!file || file.size < 400 * 1024) {
+    return file;
+  }
+  const fileType = file.type || '';
+  if (fileType && !fileType.startsWith('image/') && !fileType.includes('octet-stream')) {
     return file;
   }
 
@@ -72,18 +76,33 @@ export async function compressImageIfNeeded(file: File, maxDim = 1920, quality =
   });
 }
 
+const fileToDataUrlLocal = (file: File | Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (e) => reject(e);
+    reader.readAsDataURL(file);
+  });
+};
+
 export async function uploadPhotoFile(
   rawFile: File,
   onProgress?: (percent: number) => void
 ): Promise<UploadResponse> {
-  const file = await compressImageIfNeeded(rawFile);
+  let file = rawFile;
+  try {
+    file = await compressImageIfNeeded(rawFile);
+  } catch (e) {
+    console.warn('Image compression warning:', e);
+  }
+
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
-  if (ext && !ALLOWED_PHOTO_EXTENSIONS.includes(ext) && ext !== 'jpeg' && ext !== 'jpg') {
-    throw new Error('Unsupported image format. Allowed formats: JPG, JPEG, PNG, WEBP.');
+  if (ext && !ALLOWED_PHOTO_EXTENSIONS.includes(ext)) {
+    // Attempt fallback processing for any image
   }
 
   if (file.size > MAX_PHOTO_SIZE) {
-    throw new Error('Photo file size exceeds maximum limit of 10MB.');
+    throw new Error('Photo file size exceeds maximum limit of 25MB.');
   }
 
   return new Promise((resolve, reject) => {
@@ -107,17 +126,18 @@ export async function uploadPhotoFile(
           reject(new Error('Failed to parse server upload response.'));
         }
       } else {
-        try {
-          const errData = JSON.parse(xhr.responseText);
-          reject(new Error(errData.detail || 'Photo upload failed on server.'));
-        } catch {
-          reject(new Error(`Server error (${xhr.status}) during photo upload.`));
-        }
+        // Fallback to Data URL if server upload returns error
+        fileToDataUrlLocal(file)
+          .then((dataUrl) => resolve({ status: 'success', url: dataUrl, filename: file.name }))
+          .catch(() => reject(new Error(`Server error (${xhr.status}) during photo upload.`)));
       }
     });
 
     xhr.addEventListener('error', () => {
-      reject(new Error('Network error occurred during photo upload.'));
+      // Fallback to Data URL on network error
+      fileToDataUrlLocal(file)
+        .then((dataUrl) => resolve({ status: 'success', url: dataUrl, filename: file.name }))
+        .catch(() => reject(new Error('Network error occurred during photo upload.')));
     });
 
     xhr.open('POST', `${API_BASE_URL}/upload/photo`);

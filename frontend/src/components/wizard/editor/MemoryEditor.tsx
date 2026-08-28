@@ -90,7 +90,7 @@ export const MemoryEditor: React.FC = () => {
     }
   };
 
-  // Handle Photo Upload (Fast Parallel Upload with Auto-Compression)
+  // Handle Photo Upload (Fast Parallel Upload with Auto-Compression & Fallback)
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -109,9 +109,9 @@ export const MemoryEditor: React.FC = () => {
 
       const uploadPromises = filesToUpload.map(async (file, i) => {
         if (file.size > 25 * 1024 * 1024) {
-          throw new Error(`Photo file '${file.name}' exceeds limit.`);
+          throw new Error(`Photo file '${file.name}' exceeds maximum limit of 25MB.`);
         }
-        const res = await uploadPhotoApi(file);
+        const res = await uploadPhotoApi(file, file.name);
         const returnedUrl = res.url;
         const memoryId = `mem-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
 
@@ -134,12 +134,28 @@ export const MemoryEditor: React.FC = () => {
         };
       });
 
-      const results = await Promise.all(uploadPromises);
-      const newMemories = results.map((r) => r.memory);
-      const newPhotos = results.map((r) => r.photo);
+      const results = await Promise.allSettled(uploadPromises);
+      const successfulMemories: WizardMemoryItem[] = [];
+      const successfulPhotos: any[] = [];
+      let firstError: string | null = null;
 
-      setMemories([...memories, ...newMemories]);
-      setPhotos([...data.photos, ...newPhotos]);
+      results.forEach((r) => {
+        if (r.status === 'fulfilled') {
+          successfulMemories.push(r.value.memory);
+          successfulPhotos.push(r.value.photo);
+        } else {
+          if (!firstError) firstError = r.reason?.message || 'Some photo uploads failed.';
+        }
+      });
+
+      if (successfulMemories.length > 0) {
+        setMemories([...memories, ...successfulMemories]);
+        setPhotos([...data.photos, ...successfulPhotos]);
+      }
+
+      if (firstError) {
+        setUploadError(firstError);
+      }
     } catch (err: any) {
       setUploadError(err?.message || 'Failed to upload photo. Please try again.');
     } finally {
