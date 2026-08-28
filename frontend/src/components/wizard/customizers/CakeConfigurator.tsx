@@ -116,14 +116,10 @@ export const CakeConfigurator: React.FC = () => {
             <Flame className="h-3 w-3 text-amber-400" />
             <span>Candle Count</span>
           </label>
-          <input
-            type="number"
-            min={1}
-            max={50}
-            value={config.candleCount}
-            onChange={(e) => setCakeConfig({ candleCount: Math.max(1, parseInt(e.target.value) || 1) })}
-            className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white font-mono"
-          />
+          <div className="w-full px-3 py-1.5 rounded-lg bg-slate-950/80 border border-slate-800 text-xs text-amber-300 font-mono flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+            <span>3 Candles (Fixed)</span>
+          </div>
         </div>
       </div>
 

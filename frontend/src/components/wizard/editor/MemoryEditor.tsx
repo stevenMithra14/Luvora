@@ -16,10 +16,12 @@ import {
   X,
   Check,
   AlertCircle,
-  Sparkles
+  Sparkles,
+  Scissors as Scissor
 } from 'lucide-react';
 import { useWizard, WizardMemoryItem } from '../../../context/WizardContext';
 import { uploadPhotoApi, uploadVideoApi, resolveMediaUrl, parseYouTubeVideoId, getYouTubeThumbnailUrl } from '../../../services/giftService';
+import { MediaTrimmer } from '../../common/MediaTrimmer';
 
 export const MemoryEditor: React.FC = () => {
   const { data, setMemories, setPhotos, setMemoryConfig } = useWizard();
@@ -29,6 +31,7 @@ export const MemoryEditor: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'items' | 'settings'>('items');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [trimmingVideoId, setTrimmingVideoId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Video Link Modal State
@@ -485,6 +488,20 @@ export const MemoryEditor: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
+                        {isLuvoraVideo && (
+                          <button
+                            type="button"
+                            onClick={() => setTrimmingVideoId(trimmingVideoId === item.id ? null : item.id)}
+                            className={`px-2.5 py-1 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer transition-all ${
+                              trimmingVideoId === item.id
+                                ? 'bg-purple-500 text-white border-purple-400'
+                                : 'bg-slate-900 border-slate-800 text-purple-300 hover:bg-slate-800'
+                            }`}
+                          >
+                            <Scissor className="h-3 w-3" />
+                            <span>Trim Clip</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleMoveUp(idx)}
@@ -510,6 +527,23 @@ export const MemoryEditor: React.FC = () => {
                         </button>
                       </div>
                     </div>
+
+                    {trimmingVideoId === item.id && isLuvoraVideo && (
+                      <div className="pt-2">
+                        <MediaTrimmer
+                          type="video"
+                          mediaUrl={resolveMediaUrl(item.fileUrl)}
+                          title={item.title || 'Luvora Video Memory'}
+                          initialTrimStart={item.trimStart || 0}
+                          initialTrimEnd={item.trimEnd}
+                          onSave={(start, end) => {
+                            handleUpdateItem(item.id, { trimStart: start, trimEnd: end });
+                            setTrimmingVideoId(null);
+                          }}
+                          onCancel={() => setTrimmingVideoId(null)}
+                        />
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {/* Media Preview Thumbnail */}

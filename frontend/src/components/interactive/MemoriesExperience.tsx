@@ -339,9 +339,28 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
             playsInline
             preload="metadata"
             poster={item.thumbnailUrl}
-            onPlay={() => setIsPlayingVideo(true)}
+            onPlay={(e) => {
+              setIsPlayingVideo(true);
+              const video = e.currentTarget;
+              if (item.trimStart !== undefined && item.trimStart > 0) {
+                if (video.currentTime < item.trimStart || (item.trimEnd && video.currentTime >= item.trimEnd)) {
+                  video.currentTime = item.trimStart;
+                }
+              }
+            }}
             onPause={() => setIsPlayingVideo(false)}
             onEnded={() => setIsPlayingVideo(false)}
+            onTimeUpdate={(e) => {
+              const video = e.currentTarget;
+              const trimStart = item.trimStart || 0;
+              const trimEnd = item.trimEnd;
+              if (trimEnd !== undefined && trimEnd > trimStart) {
+                if (video.currentTime >= trimEnd) {
+                  video.pause();
+                  video.currentTime = trimStart;
+                }
+              }
+            }}
             className="w-full h-auto max-h-[250px] sm:max-h-[280px] object-contain mx-auto rounded-2xl"
           >
             <source src={playableUrl} type="video/mp4" />

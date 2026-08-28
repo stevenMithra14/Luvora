@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Trash2, Upload, Loader2, AlertCircle, Link as LinkIcon, Plus, Disc, MoveUp, MoveDown, Image as ImageIcon } from 'lucide-react';
+import { Trash2, Upload, Loader2, AlertCircle, Link as LinkIcon, Plus, Disc, MoveUp, MoveDown, Image as ImageIcon, Scissors as Scissor } from 'lucide-react';
 import { useWizard, MusicTrack } from '../../../context/WizardContext';
 import { uploadAudioFile } from '../../../services/uploadService';
+import { MediaTrimmer } from '../../common/MediaTrimmer';
 
 import { SpotifyMusicPicker } from './SpotifyMusicPicker';
 
@@ -15,6 +16,7 @@ export const AudioUploader: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
+  const [trimmingTrackId, setTrimmingTrackId] = useState<string | null>(null);
 
   // Form for adding a new track by Link or Upload
   const [newTrackTitle, setNewTrackTitle] = useState('');
@@ -277,49 +279,92 @@ export const AudioUploader: React.FC = () => {
         {tracks.map((track, idx) => (
           <div
             key={track.id || idx}
-            className="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 shadow-md"
+            className="flex flex-col p-3 rounded-2xl bg-slate-950 border border-slate-800 shadow-md space-y-3"
           >
-            <div className="flex items-center gap-3 min-w-0">
-              {/* Album Cover Thumbnail */}
-              <div className="h-10 w-10 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 shrink-0 relative">
-                <img
-                  src={track.albumCoverUrl || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80'}
-                  alt="Album Cover"
-                  className="w-full h-full object-cover"
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                {/* Album Cover Thumbnail */}
+                <div className="h-10 w-10 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 shrink-0 relative">
+                  <img
+                    src={track.albumCoverUrl || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80'}
+                    alt="Album Cover"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-white truncate">{track.title}</div>
+                  <div className="text-[10px] text-slate-400 truncate">
+                    {track.artist} &bull; Song #{idx + 1}
+                    {track.trimStart !== undefined && track.trimEnd !== undefined && (
+                      <span className="ml-2 text-pink-300 font-mono">
+                        (Trim: {Math.floor(track.trimStart)}s - {Math.floor(track.trimEnd)}s)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setTrimmingTrackId(trimmingTrackId === track.id ? null : track.id)}
+                  className={`px-2.5 py-1 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer transition-all ${
+                    trimmingTrackId === track.id
+                      ? 'bg-pink-500 text-white border-pink-400'
+                      : 'bg-slate-900 border-slate-800 text-pink-300 hover:bg-slate-800'
+                  }`}
+                >
+                  <Scissor className="h-3 w-3" />
+                  <span>Trim</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleMoveUp(idx)}
+                  disabled={idx === 0}
+                  className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
+                >
+                  <MoveUp className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMoveDown(idx)}
+                  disabled={idx === tracks.length - 1}
+                  className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
+                >
+                  <MoveDown className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveTrack(track.id)}
+                  className="p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 cursor-pointer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Expandable MediaTrimmer Component */}
+            {trimmingTrackId === track.id && (
+              <div className="pt-2">
+                <MediaTrimmer
+                  type="audio"
+                  mediaUrl={track.url}
+                  title={track.title}
+                  initialTrimStart={track.trimStart || 0}
+                  initialTrimEnd={track.trimEnd}
+                  onSave={(start, end) => {
+                    const updated = tracks.map((t) =>
+                      t.id === track.id ? { ...t, trimStart: start, trimEnd: end } : t
+                    );
+                    setMusicTracks(updated);
+                    setTrimmingTrackId(null);
+                  }}
+                  onCancel={() => setTrimmingTrackId(null)}
                 />
               </div>
-
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-white truncate">{track.title}</div>
-                <div className="text-[10px] text-slate-400 truncate">{track.artist} &bull; Song #{idx + 1}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => handleMoveUp(idx)}
-                disabled={idx === 0}
-                className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
-              >
-                <MoveUp className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMoveDown(idx)}
-                disabled={idx === tracks.length - 1}
-                className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
-              >
-                <MoveDown className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRemoveTrack(track.id)}
-                className="p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 cursor-pointer"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
+            )}
           </div>
         ))}
       </div>

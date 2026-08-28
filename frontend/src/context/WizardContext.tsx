@@ -21,6 +21,8 @@ export interface WizardMemoryItem {
   memoryStory?: string;
   frameStyle?: 'classic' | 'polaroid' | 'film' | 'scrapbook' | 'elegant' | 'heart' | 'birthday' | 'cinema' | 'phone';
   displayOrder: number;
+  trimStart?: number;
+  trimEnd?: number;
 }
 
 export interface MemoryConfig {
@@ -90,6 +92,8 @@ export interface MusicTrack {
   title: string;
   artist: string;
   albumCoverUrl?: string;
+  trimStart?: number;
+  trimEnd?: number;
 }
 
 export interface SpotifyTrack {
@@ -272,7 +276,7 @@ export const WizardProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const setCakeConfig = (config: Partial<CakeConfig>) => {
     setData((prev) => ({
       ...prev,
-      cakeConfig: { ...prev.cakeConfig, ...config },
+      cakeConfig: { ...prev.cakeConfig, ...config, candleCount: 3 },
     }));
   };
 

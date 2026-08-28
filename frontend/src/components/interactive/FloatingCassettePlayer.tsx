@@ -31,7 +31,7 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
   spotifyTrack,
   autoStart = true,
 }) => {
-  const playlist = React.useMemo(() => {
+  const playlist = React.useMemo<(MusicTrack & { isSpotify?: boolean; spotifyUrl?: string })[]>(() => {
     if (spotifyTrack) {
       return [
         {
@@ -78,17 +78,32 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
   // Attempt autoplay on mount / unboxing
   useEffect(() => {
     if (autoStart && audioRef.current) {
+      if (currentTrack?.trimStart) {
+        audioRef.current.currentTime = currentTrack.trimStart;
+      }
       audioRef.current
         .play()
         .then(() => setIsPlaying(true))
         .catch(() => {
-          // Autoplay with sound blocked by browser policy
           setIsPlaying(false);
         });
     }
   }, [autoStart, audioUrl]);
 
   if (!currentTrack) return null;
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current || !currentTrack) return;
+    const trimStart = currentTrack.trimStart || 0;
+    const trimEnd = currentTrack.trimEnd;
+    if (trimEnd !== undefined && trimEnd > trimStart) {
+      if (audioRef.current.currentTime >= trimEnd) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = trimStart;
+        setIsPlaying(false);
+      }
+    }
+  };
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -97,6 +112,11 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
+      const trimStart = currentTrack?.trimStart || 0;
+      const trimEnd = currentTrack?.trimEnd;
+      if (trimEnd !== undefined && (audioRef.current.currentTime < trimStart || audioRef.current.currentTime >= trimEnd)) {
+        audioRef.current.currentTime = trimStart;
+      }
       audioRef.current
         .play()
         .then(() => {
@@ -104,7 +124,6 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
         })
         .catch((err) => {
           console.warn('Playback error:', err);
-          // Retry with fallback audio source if necessary
           if (audioRef.current) {
             audioRef.current.src = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
             audioRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
@@ -124,8 +143,9 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
       <audio
         ref={audioRef}
         src={audioUrl}
-        loop
+        loop={!currentTrack?.trimEnd}
         muted={isMuted}
+        onTimeUpdate={handleTimeUpdate}
       />
 
       {/* VINTAGE COMPACT CASSETTE PLAYER CONTAINER */}
