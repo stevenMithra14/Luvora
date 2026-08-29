@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Sparkles, Gamepad2, MoveUp, MoveDown, Trash2, Settings, Play, Eye } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, Gamepad2, MoveUp, MoveDown, Trash2, Settings, Play } from 'lucide-react';
 import { useWizard, WizardInteractive } from '../context/WizardContext';
 import { WizardProgress } from '../components/wizard/WizardProgress';
 import { GAME_CATALOG, getRecommendedGamesForOccasion, GameDefinition } from '../utils/gameCatalog';
@@ -10,12 +10,10 @@ import { GameConfigurator } from '../components/games/GameConfigurator';
 import { CustomGameEditor } from '../components/games/CustomGameEditor';
 import { GamePreviewModal } from '../components/games/GamePreviewModal';
 import { LiveDevicePreview } from '../components/wizard/preview/LiveDevicePreview';
-import { MobileGiftPreviewModal } from '../components/wizard/preview/MobileGiftPreviewModal';
 
 export const CreateGiftInteractive: React.FC = () => {
   const navigate = useNavigate();
   const { data, setInteractives, nextStep, prevStep } = useWizard();
-  const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   const [activeConfigItem, setActiveConfigItem] = useState<WizardInteractive | null>(null);
   const [activeCustomGameItem, setActiveCustomGameItem] = useState<WizardInteractive | null>(null);
@@ -273,33 +271,16 @@ export const CreateGiftInteractive: React.FC = () => {
             <span>Back</span>
           </button>
 
-          <div className="flex items-center gap-2.5 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setShowMobilePreview(true)}
-              className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-5 py-3 rounded-full border border-pink-500/40 bg-pink-500/10 text-xs font-bold text-pink-300 hover:bg-pink-500/20 hover:text-white transition-all cursor-pointer shadow-md"
-            >
-              <Eye className="h-4 w-4 text-pink-400" />
-              <span>👀 Preview Gift</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleContinue}
-              className="w-full sm:w-auto justify-center inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-300"
-            >
-              <span>Continue to Preview</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleContinue}
+            className="w-full sm:w-auto justify-center inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-300"
+          >
+            <span>Continue to Preview</span>
+            <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
       </div>
-
-      {/* Fullscreen Mobile Gift Preview Modal */}
-      <MobileGiftPreviewModal
-        isOpen={showMobilePreview}
-        onClose={() => setShowMobilePreview(false)}
-      />
 
       {/* Modals */}
       {activeConfigItem && (

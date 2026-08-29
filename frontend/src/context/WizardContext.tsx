@@ -228,15 +228,8 @@ const defaultWizardData: WizardData = {
   customBgValue: '',
   animationStyle: 'floating',
   musicUrl: '',
-  musicTracks: [
-    {
-      id: 'default-track-1',
-      title: 'Romantic Melody',
-      artist: 'Special Gift Soundtrack',
-      url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-piano-112199.mp3',
-      albumCoverUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80',
-    }
-  ],
+  musicTracks: [],
+  spotifyTrack: null,
   password: '',
   giftBoxConfig: defaultGiftBoxConfig,
   cakeConfig: defaultCakeConfig,

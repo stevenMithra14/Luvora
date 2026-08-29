@@ -283,19 +283,32 @@ export const MediaTrimmer: React.FC<MediaTrimmerProps> = ({
           <button
             type="button"
             onClick={togglePlayPreview}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold shadow-md active:scale-95 transition-all cursor-pointer"
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold shadow-lg transition-all cursor-pointer ${
+              isPlaying
+                ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/30'
+                : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-pink-500/30 hover:scale-105 active:scale-95'
+            }`}
           >
-            {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 fill-current" />}
-            <span>{isPlaying ? 'Pause' : 'Preview Selection'}</span>
+            {isPlaying ? (
+              <>
+                <Pause className="h-4 w-4 fill-current" />
+                <span>⏸ PAUSE</span>
+              </>
+            ) : (
+              <>
+                <Play className="h-4 w-4 fill-current" />
+                <span>▶ PLAY TRIMMED SNIPPET</span>
+              </>
+            )}
           </button>
 
           <button
             type="button"
             onClick={handleReset}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
+            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
             title="Reset Full Range"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
+            <RotateCcw className="h-4 w-4" />
           </button>
         </div>
 

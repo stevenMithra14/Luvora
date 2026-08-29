@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Sparkles, Layout, Palette, Type, Image as ImageIcon, Gift, PartyPopper, ChevronRight, Eye } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, Layout, Palette, Type, Image as ImageIcon, Gift, PartyPopper, ChevronRight } from 'lucide-react';
 import { useWizard } from '../context/WizardContext';
 import { WizardProgress } from '../components/wizard/WizardProgress';
 import { CoverControls } from '../components/wizard/editor/CoverControls';
@@ -13,14 +13,12 @@ import { AnimationControls } from '../components/wizard/editor/AnimationControls
 import { GiftBoxConfigurator } from '../components/wizard/customizers/GiftBoxConfigurator';
 import { CakeConfigurator } from '../components/wizard/customizers/CakeConfigurator';
 import { LiveDevicePreview } from '../components/wizard/preview/LiveDevicePreview';
-import { MobileGiftPreviewModal } from '../components/wizard/preview/MobileGiftPreviewModal';
 
 export const CreateGiftStep3: React.FC = () => {
   const navigate = useNavigate();
   const { data, nextStep, prevStep } = useWizard();
 
   const [activeTab, setActiveTab] = useState<'box' | 'cake' | 'cover' | 'message' | 'theme' | 'typography' | 'background' | 'animation'>('box');
-  const [showMobilePreview, setShowMobilePreview] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -151,33 +149,16 @@ export const CreateGiftStep3: React.FC = () => {
             <span>Back</span>
           </button>
 
-          <div className="flex items-center gap-2.5 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setShowMobilePreview(true)}
-              className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-5 py-3 rounded-full border border-pink-500/40 bg-pink-500/10 text-xs font-bold text-pink-300 hover:bg-pink-500/20 hover:text-white transition-all cursor-pointer shadow-md"
-            >
-              <Eye className="h-4 w-4 text-pink-400" />
-              <span>👀 Preview Gift</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleContinue}
-              className="w-full sm:w-auto justify-center inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-300"
-            >
-              <span>Continue to Memories</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleContinue}
+            className="w-full sm:w-auto justify-center inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:scale-105 active:scale-95 cursor-pointer transition-all duration-300"
+          >
+            <span>Continue to Memories</span>
+            <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
       </div>
-
-      {/* Fullscreen Mobile Gift Preview Modal */}
-      <MobileGiftPreviewModal
-        isOpen={showMobilePreview}
-        onClose={() => setShowMobilePreview(false)}
-      />
     </div>
   );
 };
