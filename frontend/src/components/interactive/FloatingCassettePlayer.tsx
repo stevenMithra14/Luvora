@@ -175,14 +175,14 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
       <motion.div
         initial={{ opacity: 0, y: -15, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="relative flex flex-col p-1.5 pl-2 pr-3 rounded-2xl bg-slate-950/95 border-2 border-pink-500/40 shadow-2xl backdrop-blur-xl text-white max-w-[280px] sm:max-w-[320px]"
-        style={{ boxShadow: isPlaying ? '0 0 20px rgba(236,72,153,0.35)' : '0 10px 25px rgba(0,0,0,0.5)' }}
+        className="relative flex flex-col p-1.5 pl-2 pr-2.5 rounded-2xl bg-slate-950/95 border border-pink-500/40 shadow-2xl backdrop-blur-xl text-white w-[160px] sm:w-[260px]"
+        style={{ boxShadow: isPlaying ? '0 0 15px rgba(236,72,153,0.3)' : '0 8px 20px rgba(0,0,0,0.5)' }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 w-full">
           {/* Album Artwork Cover */}
           <div
             onClick={togglePlay}
-            className="relative h-10 w-10 sm:h-11 sm:w-11 rounded-xl overflow-hidden border border-pink-400/60 shadow-md cursor-pointer shrink-0 group"
+            className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-xl overflow-hidden border border-pink-400/60 shadow-md cursor-pointer shrink-0 group"
           >
             <img
               src={currentTrack.albumCoverUrl || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80'}
@@ -194,76 +194,70 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
             />
             <div className="absolute inset-0 bg-slate-950/30 group-hover:bg-transparent transition-colors flex items-center justify-center">
               {isSpotifyTrack ? (
-                <Music2 className="h-4 w-4 text-emerald-400 shadow-md" />
+                <Music2 className="h-3.5 w-3.5 text-emerald-400 shadow-md" />
               ) : !isPlaying ? (
-                <Play className="h-4 w-4 text-white fill-white shadow-md" />
+                <Play className="h-3.5 w-3.5 text-white fill-white shadow-md" />
               ) : (
-                <Pause className="h-4 w-4 text-white fill-white shadow-md" />
+                <Pause className="h-3.5 w-3.5 text-white fill-white shadow-md" />
               )}
             </div>
           </div>
 
           {/* Song Meta */}
-          <div className="flex flex-col min-w-0 flex-1 pl-1">
-            <div className="flex items-center justify-between gap-1">
-              <span className="text-[11px] font-bold text-white truncate leading-tight">
+          <div className="flex flex-col min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-0.5">
+              <span className="text-[10px] sm:text-[11px] font-bold text-white truncate leading-tight">
                 {currentTrack.title}
               </span>
-              {isSpotifyTrack && (
-                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
-                  Spotify
-                </span>
-              )}
             </div>
-            <span className="text-[9px] font-semibold text-pink-300/80 truncate">
+            <span className="text-[8px] sm:text-[9px] font-semibold text-pink-300/80 truncate">
               {currentTrack.artist}
             </span>
 
-            {/* Mini Rotating Cassette Reels */}
-            <div className="flex items-center gap-2 mt-1 px-1.5 py-0.5 rounded bg-slate-900/90 border border-slate-800">
+            {/* Mini Rotating Cassette Reels (Hidden on small mobile screens to save space) */}
+            <div className="hidden sm:flex items-center gap-1.5 mt-1 px-1.5 py-0.5 rounded bg-slate-900/90 border border-slate-800">
               <motion.div
                 animate={isPlaying || showSpotifyEmbed ? { rotate: 360 } : { rotate: 0 }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                className="h-3 w-3 rounded-full border border-pink-400 flex items-center justify-center shrink-0"
+                className="h-2.5 w-2.5 rounded-full border border-pink-400 flex items-center justify-center shrink-0"
               >
-                <Disc className="h-2 w-2 text-pink-300" />
+                <Disc className="h-1.5 w-1.5 text-pink-300" />
               </motion.div>
               <div className="h-0.5 flex-1 bg-gradient-to-r from-pink-500 via-rose-400 to-pink-500 opacity-60 rounded" />
               <motion.div
                 animate={isPlaying || showSpotifyEmbed ? { rotate: 360 } : { rotate: 0 }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                className="h-3 w-3 rounded-full border border-pink-400 flex items-center justify-center shrink-0"
+                className="h-2.5 w-2.5 rounded-full border border-pink-400 flex items-center justify-center shrink-0"
               >
-                <Disc className="h-2 w-2 text-pink-300" />
+                <Disc className="h-1.5 w-1.5 text-pink-300" />
               </motion.div>
             </div>
           </div>
 
           {/* Player Controls */}
-          <div className="flex items-center gap-1.5 shrink-0 pl-1">
+          <div className="flex items-center gap-1 shrink-0">
             {isSpotifyTrack ? (
-              <a
-                href={currentTrack.spotifyUrl || `https://open.spotify.com/track/${spotifyTrackId}`}
-                target="_blank"
-                rel="noreferrer"
-                className="px-2.5 py-1 rounded-full bg-emerald-500 hover:bg-emerald-600 text-[10px] font-extrabold text-white flex items-center gap-1 shadow-md cursor-pointer transition-all"
-                title="Open track on Spotify"
+              <button
+                type="button"
+                onClick={() => setShowSpotifyEmbed((prev) => !prev)}
+                className="px-2 py-0.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-[9px] sm:text-[10px] font-extrabold text-white flex items-center gap-0.5 shadow-md cursor-pointer transition-all"
+                title="Toggle Spotify player"
               >
                 <span>Spotify</span>
-                <ExternalLink className="h-3 w-3" />
-              </a>
+                <ExternalLink className="h-2.5 w-2.5" />
+              </button>
             ) : (
               <>
                 <button
                   type="button"
                   onClick={togglePlay}
                   aria-label={isPlaying ? 'Pause music' : 'Play music'}
-                  className="h-7 w-7 rounded-full bg-gradient-to-tr from-pink-500 to-rose-500 text-white flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gradient-to-tr from-pink-500 to-rose-500 text-white flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
                 >
                   {isPlaying ? (
-                    <Pause className="h-3.5 w-3.5 fill-white" />
+                    <Pause className="h-3 w-3 fill-white" />
                   ) : (
-                    <Play className="h-3.5 w-3.5 fill-white ml-0.5" />
+                    <Play className="h-3 w-3 fill-white ml-0.5" />
                   )}
                 </button>
 
@@ -271,12 +265,12 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
                   type="button"
                   onClick={toggleMute}
                   aria-label={isMuted ? 'Unmute music' : 'Mute music'}
-                  className="p-1.5 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className="hidden sm:block p-1 rounded-full text-slate-400 hover:text-white transition-colors cursor-pointer"
                 >
                   {isMuted ? (
-                    <VolumeX className="h-3.5 w-3.5 text-rose-400" />
+                    <VolumeX className="h-3 w-3 text-rose-400" />
                   ) : (
-                    <Volume2 className="h-3.5 w-3.5 text-emerald-400" />
+                    <Volume2 className="h-3 w-3 text-emerald-400" />
                   )}
                 </button>
               </>
@@ -284,9 +278,9 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
           </div>
         </div>
 
-        {/* Embedded Spotify Widget (Collapsible for Spotify Tracks) */}
-        {isSpotifyTrack && spotifyTrackId && (
-          <div className="mt-2 pt-1 border-t border-slate-800">
+        {/* Embedded Spotify Widget (Collapsible - Hidden by Default on Mobile) */}
+        {showSpotifyEmbed && isSpotifyTrack && spotifyTrackId && (
+          <div className="mt-1.5 pt-1 border-t border-slate-800">
             <iframe
               title="Spotify Embedded Player"
               src={`https://open.spotify.com/embed/track/${spotifyTrackId}?utm_source=generator&theme=0`}

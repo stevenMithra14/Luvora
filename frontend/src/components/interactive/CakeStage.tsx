@@ -23,7 +23,7 @@ export const CakeStage: React.FC<CakeStageProps> = ({
   const streamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
-  // Customization props (ALWAYS force 3 candles as required)
+  // Customization props (ALWAYS force exactly 3 candles as required)
   const frostingColor = config?.frostingColor || '#f472b6'; // Pink icing
   const candleCount = 3; // ALWAYS EXACTLY 3 CANDLES
   const candleColor = config?.candleColor || '#9333ea'; // Purple candles
@@ -124,14 +124,14 @@ export const CakeStage: React.FC<CakeStageProps> = ({
 
   const startCakeCuttingSequence = () => {
     setStage('cutting');
-    setCuttingStep(1); // Step 1: Camera focus & knife enters (~500ms)
-    setTimeout(() => setCuttingStep(2), 700); // Step 2: Knife presses down & cuts (~1100ms)
-    setTimeout(() => setCuttingStep(3), 1800); // Step 3: Knife retracts (~400ms)
-    setTimeout(() => setCuttingStep(4), 2300); // Step 4: Slice separates & moves outward (~800ms)
-    setTimeout(() => setCuttingStep(5), 3200); // Step 5: Slice settles on plate & crumbs fall (~600ms)
-    setTimeout(() => setCuttingStep(6), 4000); // Step 6: Gentle celebration glow (~600ms)
+    setCuttingStep(1); // Step 1: Knife enters
+    setTimeout(() => setCuttingStep(2), 700); // Step 2: Knife cuts down into cake
+    setTimeout(() => setCuttingStep(3), 1800); // Step 3: Knife retracts
+    setTimeout(() => setCuttingStep(4), 2300); // Step 4: Slice separates onto plate beside cake
+    setTimeout(() => setCuttingStep(5), 3200); // Step 5: Slice settles on plate & subtle crumbs
+    setTimeout(() => setCuttingStep(6), 4000); // Step 6: Celebration glow
     setTimeout(() => {
-      setCuttingStep(7); // Step 7: Personalized message banner reveal & completion
+      setCuttingStep(7); // Step 7: Personalized message reveal
       setStage('complete');
       setTimeout(() => {
         onCakeComplete();
@@ -141,8 +141,8 @@ export const CakeStage: React.FC<CakeStageProps> = ({
 
   return (
     <div className="w-full flex flex-col items-center justify-center p-2 sm:p-4 text-center select-none py-2 max-w-full overflow-hidden font-sans">
-      {/* Header Prompt */}
-      <div className="mb-2 space-y-1 max-w-md relative z-30">
+      {/* Header Prompt (Sufficient margin to avoid overlap with candle flames) */}
+      <div className="mb-4 sm:mb-6 space-y-1 max-w-md relative z-30">
         <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-3.5 py-1 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 shadow-sm backdrop-blur-md">
           <PartyPopper className="h-3.5 w-3.5 text-purple-400" />
           {stage === 'blow'
@@ -152,7 +152,7 @@ export const CakeStage: React.FC<CakeStageProps> = ({
             : 'Birthday Celebration Complete!'}
         </span>
 
-        <h2 className="font-heading text-xl sm:text-3xl font-extrabold text-white leading-tight drop-shadow-md">
+        <h2 className="font-heading text-xl sm:text-3xl font-extrabold text-white leading-tight drop-shadow-md pt-1">
           {stage === 'blow'
             ? 'Blow Out the Candles! 🕯️'
             : stage === 'cutting'
@@ -172,8 +172,8 @@ export const CakeStage: React.FC<CakeStageProps> = ({
       </div>
 
       {/* 3D CANVAS STAGE */}
-      <div className="relative my-3 flex flex-col items-center justify-center w-full max-w-md">
-        {/* Soft Controlled Celebration Glow Behind Cake (Will NOT overlap text) */}
+      <div className="relative my-2 sm:my-3 flex flex-col items-center justify-center w-full max-w-md pt-4 sm:pt-6">
+        {/* Soft Controlled Celebration Glow Behind Cake */}
         {candlesBlown && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -185,8 +185,8 @@ export const CakeStage: React.FC<CakeStageProps> = ({
 
         {/* 3D CAKE & STAND CONTAINER */}
         <div className="relative flex flex-col items-center justify-center z-10">
-          {/* EXACTLY 3 PURPLE CANDLES ON TOP TIER */}
-          <div className="flex items-center justify-center gap-4 mb-[-6px] z-30 relative">
+          {/* EXACTLY 3 PURPLE CANDLES RESTING PROPERLY ON TOP TIER FROSTING */}
+          <div className="flex items-center justify-center gap-5 sm:gap-6 -mb-4 z-30 relative">
             {Array.from({ length: candleCount }).map((_, idx) => (
               <div
                 key={idx}
@@ -207,22 +207,22 @@ export const CakeStage: React.FC<CakeStageProps> = ({
                     }}
                     className="relative flex items-center justify-center mb-0.5"
                   >
-                    <div className="absolute h-7 w-7 rounded-full bg-amber-400/40 blur-xs animate-pulse" />
-                    <div className="h-5 w-3 rounded-full bg-gradient-to-t from-orange-600 via-amber-400 to-yellow-200 shadow-md shadow-amber-400/70 border border-yellow-100/60 relative z-10" />
-                    <div className="absolute bottom-1 h-2.5 w-1 rounded-full bg-white opacity-90 z-20" />
+                    <div className="absolute h-6 w-6 rounded-full bg-amber-400/40 blur-xs animate-pulse" />
+                    <div className="h-4.5 w-2.5 rounded-full bg-gradient-to-t from-orange-600 via-amber-400 to-yellow-200 shadow-md shadow-amber-400/70 border border-yellow-100/60 relative z-10" />
+                    <div className="absolute bottom-1 h-2 w-0.5 rounded-full bg-white opacity-90 z-20" />
                   </motion.div>
                 ) : (
                   <motion.div
                     initial={{ opacity: 1, y: 0, scale: 0.4 }}
                     animate={{ opacity: 0, y: -20, scale: 1.5 }}
                     transition={{ duration: 1, delay: idx * 0.08 }}
-                    className="h-5 w-3 rounded-full bg-slate-300/60 blur-xs mb-0.5"
+                    className="h-4.5 w-2.5 rounded-full bg-slate-300/60 blur-xs mb-0.5"
                   />
                 )}
 
-                {/* Candle Stick */}
+                {/* Candle Body Standing Straight on Top Frosting Surface */}
                 <div
-                  className="h-10 w-2.5 rounded-t-md shadow-md border-x border-purple-300/40 relative overflow-hidden flex flex-col justify-between items-center"
+                  className="h-9 sm:h-10 w-2.5 sm:w-3 rounded-t-md shadow-md border-x border-purple-300/40 relative overflow-hidden flex flex-col justify-between items-center"
                   style={{ backgroundColor: candleColor }}
                 >
                   <div className="w-full h-full bg-gradient-to-r from-white/30 via-transparent to-black/30" />
@@ -233,17 +233,17 @@ export const CakeStage: React.FC<CakeStageProps> = ({
 
           {/* MAIN 3D CAKE RENDERING CONTAINER */}
           <div className="relative w-64 sm:w-72 h-44 sm:h-52 flex flex-col items-center justify-end z-20">
-            {/* REALISTIC PROPORTIONAL 3D KNIFE */}
+            {/* REALISTIC PROPORTIONAL 3D METALLIC KNIFE */}
             <AnimatePresence>
               {cuttingStep >= 1 && cuttingStep <= 3 && (
                 <motion.div
-                  initial={{ x: 65, y: -70, opacity: 0, rotate: -25 }}
+                  initial={{ x: 65, y: -50, opacity: 0, rotate: -25 }}
                   animate={
                     cuttingStep === 2
-                      ? { x: 32, y: 15, opacity: 1, rotate: -8 } // Presses into cake
+                      ? { x: 24, y: -25, opacity: 1, rotate: -8 } // Cuts into cake tiers
                       : cuttingStep === 3
-                      ? { x: 50, y: -30, opacity: 0.8, rotate: -18 } // Retracts
-                      : { x: 55, y: -45, opacity: 1, rotate: -20 } // Enters
+                      ? { x: 48, y: -45, opacity: 0.8, rotate: -18 } // Retracts
+                      : { x: 55, y: -40, opacity: 1, rotate: -20 } // Enters
                   }
                   exit={{ opacity: 0, y: -60 }}
                   transition={{
@@ -355,13 +355,13 @@ export const CakeStage: React.FC<CakeStageProps> = ({
               </div>
             </div>
 
-            {/* REVEALED CUT WEDGES INSIDE MAIN CAKE (Step 4+) */}
+            {/* REVEALED CUT WEDGES INSIDE MAIN CAKE (Aligned with cake tiers) */}
             {cuttingStep >= 4 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4 }}
-                className="absolute right-5 sm:right-7 bottom-2 z-25 w-12 sm:w-14 h-24 sm:h-28 bg-gradient-to-r from-[#2c1409] via-[#3f1f10] to-[#1e0b04] border-l border-pink-400/40 rounded-r-md shadow-inner flex flex-col justify-around p-1"
+                className="absolute right-5 sm:right-7 bottom-[52px] sm:bottom-[60px] z-25 w-12 sm:w-14 h-24 sm:h-28 bg-gradient-to-r from-[#2c1409] via-[#3f1f10] to-[#1e0b04] border-l border-pink-400/40 rounded-r-md shadow-inner flex flex-col justify-around p-1"
               >
                 {/* Exposed Internal Sponge & Cream Layers */}
                 <div className="w-full h-1 bg-pink-300/80 rounded" />
@@ -372,17 +372,17 @@ export const CakeStage: React.FC<CakeStageProps> = ({
               </motion.div>
             )}
 
-            {/* SEPARATED 15-20% CAKE SLICE ON PLATE (Steps 4 to 6) */}
+            {/* SEPARATED 15-20% CAKE SLICE ON DESSERT PLATE (Resting on Cake Stand's Top Plate beside Cake) */}
             {cuttingStep >= 4 && (
               <motion.div
                 initial={{ x: 0, y: 0, opacity: 0, scale: 0.95 }}
                 animate={
                   cuttingStep >= 5
-                    ? { x: 52, y: 12, opacity: 1, scale: 1 } // Settles smoothly
-                    : { x: 35, y: 6, opacity: 0.95, scale: 0.98 } // Separating
+                    ? { x: 46, y: 0, opacity: 1, scale: 1 } // Settles on plate beside cake
+                    : { x: 30, y: -2, opacity: 0.95, scale: 0.98 } // Separating
                 }
                 transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute right-1 sm:right-3 bottom-0 z-40 flex flex-col items-center"
+                className="absolute right-1 sm:right-3 bottom-[52px] sm:bottom-[60px] z-40 flex flex-col items-center"
               >
                 {/* 15-20% Slice Body */}
                 <div className="w-14 sm:w-16 h-22 sm:h-26 rounded-r-xl bg-[#3f1f10] border border-pink-300/70 shadow-2xl overflow-hidden flex flex-col justify-between relative">
@@ -415,7 +415,7 @@ export const CakeStage: React.FC<CakeStageProps> = ({
                 initial={{ opacity: 1, y: 0 }}
                 animate={{ opacity: 0, y: 12 }}
                 transition={{ duration: 0.8 }}
-                className="absolute right-12 bottom-3 z-30 flex gap-1 pointer-events-none"
+                className="absolute right-12 bottom-[55px] z-30 flex gap-1 pointer-events-none"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-800 shadow-xs" />
                 <span className="h-1 w-1 rounded-full bg-pink-400 shadow-xs" />
