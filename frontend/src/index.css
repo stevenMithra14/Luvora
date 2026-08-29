@@ -23,7 +23,7 @@
 }
 
 /* ==========================================
-   GLOBAL SCROLLBAR HIDING (NO SCROLLBAR LINES)
+   GLOBAL SCROLLBAR HIDING
    ========================================== */
 ::-webkit-scrollbar,
 *::-webkit-scrollbar {
@@ -36,128 +36,224 @@
 html,
 body,
 * {
-  -ms-overflow-style: none !important;  /* IE and Edge */
-  scrollbar-width: none !important;     /* Firefox */
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 /* ==========================================
-   HIGH CONTRAST FORM CONTROLS & DATE PICKERS
+   CENTRALIZED LUVORA DESIGN SYSTEM & THEME TOKENS
    ========================================== */
+
+/* DARK MODE THEME (Default) */
 :root {
   color-scheme: dark;
+  --bg-main: #0b1018;
+  --bg-surface: #151b26;
+  --bg-surface-elevated: #1b2230;
+  --bg-surface-hover: #202838;
+
+  --text-primary: #f7f7fa;
+  --text-secondary: #a9afbc;
+  --text-muted: #6f727c;
+
+  --border-color: #2a3040;
+  --border-subtle: #1e2430;
+
+  --accent-primary: #ff5c91;
+  --accent-primary-hover: #e04b7e;
+  --accent-secondary: #a66cff;
+
+  --card-bg: #151b26;
+  --card-border: #2a3040;
+  --input-bg: #0f131c;
+  --input-border: #2a3040;
+  --input-text: #f7f7fa;
 }
 
+/* BRIGHT MODE THEME */
 html.light-theme {
   color-scheme: light;
+  --bg-main: #fff7f9;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ffe9ef;
+  --bg-surface-hover: #ffd7e3;
+
+  --text-primary: #17171a;
+  --text-secondary: #686b73;
+  --text-muted: #92959e;
+
+  --border-color: #e8e2e5;
+  --border-subtle: #f2ebef;
+
+  --accent-primary: #ff6b9d;
+  --accent-primary-hover: #e05485;
+  --accent-secondary: #9d4edd;
+
+  --card-bg: #ffffff;
+  --card-border: #e8e2e5;
+  --input-bg: #ffffff;
+  --input-border: #e8e2e5;
+  --input-text: #17171a;
 }
 
+html, body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+}
+
+/* ==========================================
+   DARK MODE REFINED THEMING OVERRIDES
+   ========================================== */
+body {
+  background-color: #0b1018;
+}
+
+.bg-slate-950 {
+  background-color: #0b1018 !important;
+}
+
+.bg-slate-900 {
+  background-color: #151b26 !important;
+}
+
+.bg-slate-800 {
+  background-color: #1b2230 !important;
+}
+
+.border-slate-800,
+.border-slate-700 {
+  border-color: #2a3040 !important;
+}
+
+.text-slate-100 {
+  color: #f7f7fa !important;
+}
+
+.text-slate-300,
+.text-slate-400 {
+  color: #a9afbc !important;
+}
+
+.text-slate-500,
+.text-slate-600 {
+  color: #6f727c !important;
+}
+
+/* Date Picker Indicator */
 input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  filter: drop-shadow(0 0 6px rgba(244, 114, 182, 0.8)) invert(1) sepia(1) saturate(5) hue-rotate(280deg);
+  filter: drop-shadow(0 0 6px rgba(255, 92, 145, 0.5)) invert(1) sepia(1) saturate(5) hue-rotate(280deg);
   opacity: 1 !important;
   transition: transform 0.2s;
   padding: 4px;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  transform: scale(1.2);
+  transform: scale(1.15);
+}
+
+/* ==========================================
+   BRIGHT MODE POLISHED THEMING OVERRIDES
+   ========================================== */
+html.light-theme body {
+  background-color: #fff7f9 !important;
+  color: #17171a !important;
 }
 
 html.light-theme input[type="date"]::-webkit-calendar-picker-indicator {
   filter: none;
 }
-html.light-theme {
-  background-color: #faf5fa !important;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(244, 114, 182, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%),
-    linear-gradient(to right, rgba(236, 72, 153, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(236, 72, 153, 0.06) 1px, transparent 1px) !important;
-  background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px !important;
-  color: #0f172a !important;
+
+html.light-theme .bg-slate-950 {
+  background-color: #fff7f9 !important;
 }
 
-html.light-theme body {
-  background-color: transparent !important;
-  color: #0f172a !important;
+html.light-theme .bg-slate-950\/90,
+html.light-theme .bg-slate-950\/80,
+html.light-theme .bg-slate-900\/90,
+html.light-theme .bg-slate-900\/80 {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+  border-color: #e8e2e5 !important;
 }
 
-html.light-theme header,
-html.light-theme footer {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: rgba(244, 114, 182, 0.25) !important;
-  box-shadow: 0 4px 20px -5px rgba(236, 72, 153, 0.08) !important;
+html.light-theme .bg-slate-900,
+html.light-theme [class*="bg-slate-900"] {
+  background-color: #ffffff !important;
 }
 
-/* Catch-all slate background overrides for cards, panels, badges & containers */
-html.light-theme [class*="bg-slate-"] {
-  background-color: rgba(255, 255, 255, 0.92) !important;
-  border-color: rgba(244, 114, 182, 0.25) !important;
-  box-shadow: 0 10px 25px -5px rgba(236, 72, 153, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
+html.light-theme .bg-slate-800,
+html.light-theme [class*="bg-slate-800"] {
+  background-color: #fbf7f9 !important;
 }
 
-/* Light Mode Sections */
-html.light-theme section {
-  background-color: transparent !important;
-}
-
-/* Light Mode Selected Option Card - Glowing Soft Pink Gradient */
-html.light-theme .ring-2.ring-pink-500\/30,
-html.light-theme .ring-2.ring-pink-500\/40,
-html.light-theme .border-pink-500 {
-  background: linear-gradient(135deg, rgba(253, 242, 248, 0.95), rgba(252, 231, 243, 0.95)) !important;
-  border-color: #ec4899 !important;
-  box-shadow: 0 10px 25px -5px rgba(236, 72, 153, 0.25) !important;
-}
-
-/* Text Colors */
-html.light-theme .text-white {
-  color: #0f172a !important;
-}
-
-html.light-theme .text-slate-100,
-html.light-theme .text-slate-200,
-html.light-theme .text-slate-300 {
-  color: #1e293b !important;
-}
-
-html.light-theme .text-slate-400,
-html.light-theme .text-slate-500 {
-  color: #475569 !important;
-}
-
-/* Border Overrides */
+html.light-theme .border-slate-900,
+html.light-theme .border-slate-800,
+html.light-theme .border-slate-700,
 html.light-theme [class*="border-slate-"] {
-  border-color: rgba(244, 114, 182, 0.25) !important;
+  border-color: #e8e2e5 !important;
 }
 
-/* Secondary Action Buttons & Badges in Light Mode */
-html.light-theme a[href="#how-it-works"],
+/* Light mode primary text */
+html.light-theme .text-slate-100,
+html.light-theme .text-slate-200 {
+  color: #17171a !important;
+}
+
+html.light-theme .text-slate-300,
+html.light-theme .text-slate-400 {
+  color: #686b73 !important;
+}
+
+html.light-theme .text-slate-500,
+html.light-theme .text-slate-600 {
+  color: #92959e !important;
+}
+
+/* Maintain crisp white text inside accent/primary action buttons in light mode */
+html.light-theme .bg-gradient-to-r,
+html.light-theme [class*="8b2626"],
+html.light-theme .bg-rose-700,
+html.light-theme .bg-rose-600,
+html.light-theme .bg-pink-500,
+html.light-theme .bg-pink-600,
+html.light-theme button.bg-pink-500,
+html.light-theme button.bg-rose-600 {
+  color: #ffffff !important;
+}
+
+html.light-theme .bg-gradient-to-r *,
+html.light-theme [class*="8b2626"] *,
+html.light-theme .bg-rose-700 *,
+html.light-theme .bg-rose-600 * {
+  color: inherit;
+}
+
+/* Secondary action buttons & neutral pills in light mode */
+html.light-theme a.bg-slate-900\/80,
 html.light-theme button.bg-slate-900,
-html.light-theme button.bg-slate-800,
-html.light-theme div.bg-slate-800 {
-  background-color: #fce7f3 !important;
-  color: #be185d !important;
-  border-color: rgba(244, 114, 182, 0.4) !important;
-  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.1) !important;
+html.light-theme button.bg-slate-800 {
+  background-color: #ffffff !important;
+  color: #17171a !important;
+  border-color: #e8e2e5 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
 }
 
-/* Form Controls */
+/* Form Controls in light mode */
 html.light-theme input,
 html.light-theme textarea,
 html.light-theme select {
   background-color: #ffffff !important;
-  border-color: rgba(244, 114, 182, 0.3) !important;
-  color: #0f172a !important;
+  border-color: #e8e2e5 !important;
+  color: #17171a !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02) !important;
 }
 
 html.light-theme input::placeholder,
 html.light-theme textarea::placeholder {
-  color: #94a3b8 !important;
+  color: #92959e !important;
 }
 
-/* Light mode specific logo & text gradient contrast */
+/* Gradient headlines in light mode */
 html.light-theme .bg-clip-text {
-  background-image: linear-gradient(to right, #0f172a, #831843, #db2777) !important;
+  background-image: linear-gradient(to right, #17171a, #831843, #db2777) !important;
 }
