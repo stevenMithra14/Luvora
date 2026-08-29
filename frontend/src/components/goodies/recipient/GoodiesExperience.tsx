@@ -708,36 +708,45 @@ export const GoodiesExperience: React.FC<GoodiesExperienceProps> = ({
                       ))}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!audioRef.current) return;
-                        if (isPlayingAudio) {
-                          audioRef.current.pause();
-                          setIsPlayingAudio(false);
-                        } else {
-                          const targetUrl = getPlayableAudioUrl(activeGoodie.mediaUrl || activeGoodie.configurationJson?.audioUrl, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3');
-                          audioRef.current.src = targetUrl;
-                          audioRef.current.play().then(() => setIsPlayingAudio(true)).catch(() => {
-                            const a = new Audio(targetUrl);
-                            a.play().then(() => setIsPlayingAudio(true)).catch(() => {});
-                          });
-                        }
-                      }}
-                      className="h-14 w-14 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-pink-500/30 hover:scale-105 transition-all mx-auto cursor-pointer"
-                    >
-                      {isPlayingAudio ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 fill-white" />}
-                    </button>
+                    {getPlayableAudioUrl(activeGoodie.mediaUrl || activeGoodie.configurationJson?.audioUrl, '') ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!audioRef.current) return;
+                            if (isPlayingAudio) {
+                              audioRef.current.pause();
+                              setIsPlayingAudio(false);
+                            } else {
+                              const targetUrl = getPlayableAudioUrl(activeGoodie.mediaUrl || activeGoodie.configurationJson?.audioUrl, '');
+                              if (!targetUrl) return;
+                              audioRef.current.src = targetUrl;
+                              audioRef.current.play().then(() => setIsPlayingAudio(true)).catch(() => {
+                                const a = new Audio(targetUrl);
+                                a.play().then(() => setIsPlayingAudio(true)).catch(() => {});
+                              });
+                            }
+                          }}
+                          className="h-14 w-14 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-pink-500/30 hover:scale-105 transition-all mx-auto cursor-pointer"
+                        >
+                          {isPlayingAudio ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 fill-white" />}
+                        </button>
 
-                    <audio
-                      ref={audioRef}
-                      src={getPlayableAudioUrl(activeGoodie.mediaUrl || activeGoodie.configurationJson?.audioUrl, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3')}
-                      onPlay={() => setIsPlayingAudio(true)}
-                      onPause={() => setIsPlayingAudio(false)}
-                      onEnded={() => setIsPlayingAudio(false)}
-                      controls
-                      className="w-full h-8 rounded-lg accent-rose-500 opacity-90 hover:opacity-100 transition-opacity"
-                    />
+                        <audio
+                          ref={audioRef}
+                          src={getPlayableAudioUrl(activeGoodie.mediaUrl || activeGoodie.configurationJson?.audioUrl, '')}
+                          onPlay={() => setIsPlayingAudio(true)}
+                          onPause={() => setIsPlayingAudio(false)}
+                          onEnded={() => setIsPlayingAudio(false)}
+                          controls
+                          className="w-full h-8 rounded-lg accent-rose-500 opacity-90 hover:opacity-100 transition-opacity"
+                        />
+                      </>
+                    ) : (
+                      <p className="text-xs text-rose-300 font-mono py-2">
+                        (No voice recording uploaded)
+                      </p>
+                    )}
 
                     <p className="text-xs text-slate-300 italic font-serif">
                       "{activeGoodie.configurationJson?.caption || activeGoodie.description}"

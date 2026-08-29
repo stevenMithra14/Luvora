@@ -107,9 +107,9 @@ export const GOODIE_CATALOG: GoodieDefinition[] = [
     defaultTitle: 'Voice Message',
     defaultDescription: 'Listen to a personal voice note.',
     defaultConfig: {
-      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-      title: 'Listen when you miss me',
-      caption: 'Press play to hear my message for you ❤️',
+      audioUrl: '',
+      title: 'Voice Message',
+      caption: '',
     },
   },
   {
