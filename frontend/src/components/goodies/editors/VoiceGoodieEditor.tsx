@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Upload, Loader2, Mic, Square, RotateCcw, Volume2, Send, Check } from 'lucide-react';
+import { X, Upload, Loader2, Mic, Square, RotateCcw, Volume2, Send, Check, RefreshCw, AlertCircle } from 'lucide-react';
 import { WizardGoodie } from '../../../context/WizardContext';
 import { uploadAudioApi } from '../../../services/giftService';
 
@@ -19,6 +19,8 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
   const [sourceType, setSourceType] = useState<'recorded' | 'uploaded' | null>(initialUrl ? 'uploaded' : null);
 
   const [micError, setMicError] = useState('');
+  const [errorType, setErrorType] = useState<'denied' | 'no_mic' | 'busy' | 'security' | 'unsupported' | 'unknown' | null>(null);
+  const [, setPermissionState] = useState<'granted' | 'denied' | 'prompt' | 'unknown'>('unknown');
   const [isUploading, setIsUploading] = useState(false);
 
   // Live Microphone Recording States
@@ -34,6 +36,23 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
+    if (navigator?.permissions?.query) {
+      navigator.permissions.query({ name: 'microphone' as any })
+        .then((result) => {
+          setPermissionState(result.state);
+          result.onchange = () => {
+            setPermissionState(result.state);
+            if (result.state === 'granted') {
+              setMicError('');
+              setErrorType(null);
+            }
+          };
+        })
+        .catch(() => {
+          // Permissions query not supported for microphone on some browsers
+        });
+    }
+
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -41,23 +60,43 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       }
     };
   }, []);
 
   const startRecording = async () => {
     setMicError('');
-    if (!navigator?.mediaDevices?.getUserMedia) {
-      setMicError("Live recording isn't supported by this browser. Please upload an audio file instead.");
+    setErrorType(null);
+
+    // 1. HTTPS / Security check
+    const isLocalhost = Boolean(
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '[::1]'
+    );
+    if (!window.isSecureContext && !isLocalhost) {
+      setErrorType('security');
+      setMicError('🔒 Microphone recording requires a secure connection (HTTPS) or localhost.');
+      return;
+    }
+
+    // 2. Check API support
+    if (!navigator?.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setErrorType('unsupported');
+      setMicError('⚠️ Live recording is not supported by this browser. Please try Chrome, Edge, Safari, or another supported browser.');
       return;
     }
 
     try {
+      // 3. Request user microphone stream
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
+      setPermissionState('granted');
       audioChunksRef.current = [];
 
-      let mimeType = '';
+      // 4. Dynamic MIME type selection strategy
+      let selectedMimeType = '';
       const candidateTypes = [
         'audio/webm;codecs=opus',
         'audio/webm',
@@ -66,10 +105,10 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
         'audio/ogg;codecs=opus',
       ];
 
-      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported) {
+      if (typeof MediaRecorder.isTypeSupported === 'function') {
         for (const type of candidateTypes) {
           if (MediaRecorder.isTypeSupported(type)) {
-            mimeType = type;
+            selectedMimeType = type;
             break;
           }
         }
@@ -77,7 +116,7 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
 
       let recorder: MediaRecorder;
       try {
-        recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        recorder = selectedMimeType ? new MediaRecorder(stream, { mimeType: selectedMimeType }) : new MediaRecorder(stream);
       } catch (e) {
         recorder = new MediaRecorder(stream);
       }
@@ -89,7 +128,7 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
       };
 
       recorder.onstop = () => {
-        const finalMime = recorder.mimeType || mimeType || 'audio/webm';
+        const finalMime = recorder.mimeType || selectedMimeType || 'audio/webm';
         const blob = new Blob(audioChunksRef.current, { type: finalMime });
         setAudioBlob(blob);
         setUploadedFile(null);
@@ -121,16 +160,33 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
         streamRef.current = null;
       }
       setIsRecording(false);
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
 
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setMicError('Microphone access was denied. Please allow microphone permission in your browser settings and try again.');
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        setMicError('No microphone found on your device. Please connect a microphone or upload an audio file instead.');
-      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        setMicError('Microphone is currently in use by another application.');
+      const errName = err?.name || '';
+      const errMsg = err?.message || '';
+
+      if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+        setPermissionState('denied');
+        setErrorType('denied');
+        setMicError('🎙 Microphone permission is blocked. Please allow microphone access for this site in your browser settings, then try again.');
+      } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+        setErrorType('no_mic');
+        setMicError('🎙 No microphone was detected on this device.');
+      } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
+        setErrorType('busy');
+        setMicError('🎙 Your microphone may already be in use by another app or browser tab.');
+      } else if (errName === 'SecurityError') {
+        setErrorType('security');
+        setMicError('🔒 Microphone recording requires a secure connection (HTTPS) or localhost.');
+      } else if (errName === 'OverconstrainedError' || errName === 'AbortError' || errName === 'TypeError') {
+        setErrorType('unknown');
+        setMicError('Something went wrong while starting the microphone. Please try again.');
       } else {
-        setMicError(err.message || "Live recording isn't supported or failed. Please upload an audio file instead.");
+        setErrorType('unknown');
+        setMicError(errMsg || 'Something went wrong while starting the microphone. Please try again.');
       }
     }
   };
@@ -164,6 +220,7 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
     setSourceType(null);
     setRecordingTime(0);
     setMicError('');
+    setErrorType(null);
   };
 
   const formatTime = (seconds: number) => {
@@ -181,6 +238,7 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
     }
 
     setMicError('');
+    setErrorType(null);
     setAudioBlob(null);
     setUploadedFile(file);
 
@@ -194,12 +252,14 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
     let finalUrl = audioUrl;
 
     if (!audioBlob && !uploadedFile && (!finalUrl || finalUrl.startsWith('blob:'))) {
+      setErrorType('unknown');
       setMicError('Please record or upload a voice note first.');
       return;
     }
 
     setIsUploading(true);
     setMicError('');
+    setErrorType(null);
 
     try {
       if (audioBlob) {
@@ -218,6 +278,7 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
       }
 
       if (!finalUrl) {
+        setErrorType('unknown');
         setMicError('Failed to process voice note audio. Please try again.');
         setIsUploading(false);
         return;
@@ -237,6 +298,7 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
       setIsUploading(false);
       onClose();
     } catch (err: any) {
+      setErrorType('unknown');
       setMicError(err.message || 'Failed to upload voice note. Please try again.');
       setIsUploading(false);
     }
@@ -384,11 +446,31 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
             </div>
           )}
 
-          {/* STATE 5: ERROR MESSAGE */}
+          {/* STATE 5: ERROR MESSAGE & PERMISSION TROUBLESHOOTING */}
           {micError && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-sans space-y-1">
-              <p className="font-bold">⚠️ Notice:</p>
-              <p>{micError}</p>
+            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-[11px] font-sans space-y-2.5 shadow-xs">
+              <div className="flex items-start gap-2 font-medium text-rose-900">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                <span className="leading-snug">{micError}</span>
+              </div>
+
+              {errorType === 'denied' && (
+                <div className="text-[10px] text-slate-600 space-y-1.5 bg-white/80 p-2.5 rounded-xl border border-rose-100 font-sans">
+                  <p className="font-bold text-slate-800">How to allow microphone permission:</p>
+                  <p>• <strong>Chrome / Edge:</strong> Click the lock/settings icon in the address bar → turn on Microphone access.</p>
+                  <p>• <strong>Safari / iOS:</strong> Open iOS Settings → Safari → Microphone → set to Allow.</p>
+                  <p>• <strong>Android Chrome:</strong> Tap lock icon near address bar → Site Settings → Microphone → Allow.</p>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={startRecording}
+                className="w-full py-2 px-3 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-mono text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Try Again</span>
+              </button>
             </div>
           )}
         </div>
