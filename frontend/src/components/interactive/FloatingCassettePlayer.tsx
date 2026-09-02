@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause } from 'lucide-react';
 import { MusicTrack, SpotifyTrack } from '../../context/WizardContext';
-import { resolveMediaUrl } from '../../services/giftService';
+import { resolveMediaUrl, fetchSpotifyOEmbed } from '../../services/giftService';
 
 interface FloatingCassettePlayerProps {
   tracks?: MusicTrack[];
@@ -11,10 +11,36 @@ interface FloatingCassettePlayerProps {
   autoStart?: boolean;
 }
 
+export interface PlaylistItem {
+  id: string;
+  url: string;
+  title: string;
+  artist: string;
+  albumCoverUrl?: string;
+  trimStart?: number;
+  trimEnd?: number;
+  isSpotify?: boolean;
+  spotifyUrl?: string;
+  spotifyId?: string;
+}
+
 export const parseSpotifyTrackId = (url?: string): string | null => {
   if (!url || typeof url !== 'string') return null;
-  const match = url.match(/track[\/:]([a-zA-Z0-9]{22})/);
-  return match ? match[1] : null;
+  const trimmed = url.trim();
+
+  // Pattern 1: open.spotify.com/track/XXXXXXXX or open.spotify.com/intl-xx/track/XXXXXXXX
+  const matchWeb = trimmed.match(/open\.spotify\.com\/(?:[a-zA-Z0-9_-]+\/)?track\/([a-zA-Z0-9]+)/i);
+  if (matchWeb && matchWeb[1]) {
+    return matchWeb[1];
+  }
+
+  // Pattern 2: spotify:track:XXXXXXXX
+  const matchUri = trimmed.match(/spotify:track:([a-zA-Z0-9]+)/i);
+  if (matchUri && matchUri[1]) {
+    return matchUri[1];
+  }
+
+  return null;
 };
 
 const getPlayableAudioUrl = (rawUrl?: string): string | null => {
@@ -32,63 +58,71 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
   spotifyTrack,
   autoStart = true,
 }) => {
-  const playlist = React.useMemo<(MusicTrack & { isSpotify?: boolean; spotifyUrl?: string; spotifyId?: string })[]>(() => {
-    if (spotifyTrack) {
-      const spId = spotifyTrack.id || parseSpotifyTrackId(spotifyTrack.spotifyUrl) || '';
+  const [fetchedMetadata, setFetchedMetadata] = useState<{ title?: string; artist?: string; albumArt?: string } | null>(null);
+
+  // Extract exact Spotify track ID from spotifyTrack prop or singleMusicUrl string
+  const spotifyTrackId = spotifyTrack?.id || parseSpotifyTrackId(spotifyTrack?.spotifyUrl) || parseSpotifyTrackId(singleMusicUrl);
+  const isSpotifyTrack = Boolean(spotifyTrack || (singleMusicUrl && parseSpotifyTrackId(singleMusicUrl)));
+  
+  const cleanSpotifyUrl = spotifyTrack?.spotifyUrl || (spotifyTrackId ? `https://open.spotify.com/track/${spotifyTrackId}` : (singleMusicUrl || ''));
+  const audioUrl = !isSpotifyTrack ? getPlayableAudioUrl(singleMusicUrl || (tracks && tracks[0]?.url)) : null;
+
+  // Dynamically fetch metadata for Spotify track using Spotify's official oEmbed API if title/artist is missing
+  useEffect(() => {
+    let isMounted = true;
+    if (isSpotifyTrack && cleanSpotifyUrl) {
+      fetchSpotifyOEmbed(cleanSpotifyUrl).then((res) => {
+        if (isMounted && res) {
+          setFetchedMetadata({
+            title: res.title,
+            artist: res.artist,
+            albumArt: res.thumbnail_url
+          });
+        }
+      });
+    }
+    return () => { isMounted = false; };
+  }, [isSpotifyTrack, cleanSpotifyUrl]);
+
+  const playlist = React.useMemo<PlaylistItem[]>(() => {
+    if (isSpotifyTrack && spotifyTrackId) {
+      const trackTitle = spotifyTrack?.name || fetchedMetadata?.title || 'Spotify Track';
+      const trackArtist = spotifyTrack?.artist || fetchedMetadata?.artist || 'Spotify Artist';
+      const albumArt = spotifyTrack?.albumArt || fetchedMetadata?.albumArt || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80';
+
       return [
         {
-          id: `spotify-${spId || Date.now()}`,
-          url: spotifyTrack.previewUrl || spotifyTrack.spotifyUrl || '',
-          title: spotifyTrack.name || 'Spotify Track',
-          artist: spotifyTrack.artist || 'Spotify Artist',
-          albumCoverUrl: spotifyTrack.albumArt || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80',
+          id: `spotify-${spotifyTrackId}`,
+          url: cleanSpotifyUrl,
+          title: trackTitle,
+          artist: trackArtist,
+          albumCoverUrl: albumArt,
           isSpotify: true,
-          spotifyUrl: spotifyTrack.spotifyUrl || (spId ? `https://open.spotify.com/track/${spId}` : ''),
-          spotifyId: spId,
+          spotifyUrl: cleanSpotifyUrl,
+          spotifyId: spotifyTrackId,
         },
       ];
     }
-    if (tracks && tracks.length > 0) return tracks;
-    if (singleMusicUrl && singleMusicUrl.trim()) {
-      const spId = parseSpotifyTrackId(singleMusicUrl);
-      if (spId || singleMusicUrl.includes('spotify.com')) {
-        return [
-          {
-            id: `spotify-${spId || 'track'}`,
-            url: singleMusicUrl,
-            title: 'Spotify Track',
-            artist: 'Spotify Artist',
-            albumCoverUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80',
-            isSpotify: true,
-            spotifyUrl: singleMusicUrl,
-            spotifyId: spId || '',
-          },
-        ];
-      }
 
-      const playable = getPlayableAudioUrl(singleMusicUrl);
-      if (playable) {
-        return [
-          {
-            id: 'single-1',
-            url: playable,
-            title: 'Special Gift Soundtrack',
-            artist: 'Luvora Collection',
-            albumCoverUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80',
-          },
-        ];
-      }
+    if (tracks && tracks.length > 0) return tracks;
+    if (audioUrl) {
+      return [
+        {
+          id: 'single-1',
+          url: audioUrl,
+          title: 'Special Gift Soundtrack',
+          artist: 'Luvora Collection',
+          albumCoverUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80',
+        },
+      ];
     }
     return [];
-  }, [tracks, singleMusicUrl, spotifyTrack]);
+  }, [isSpotifyTrack, spotifyTrackId, spotifyTrack, fetchedMetadata, cleanSpotifyUrl, tracks, audioUrl]);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const currentTrack = playlist[0];
-  const isSpotifyTrack = Boolean(currentTrack?.isSpotify || (currentTrack?.url && currentTrack.url.includes('spotify.com')));
-  const spotifyTrackId = currentTrack?.spotifyId || parseSpotifyTrackId(currentTrack?.spotifyUrl || currentTrack?.url);
-  const audioUrl = !isSpotifyTrack ? getPlayableAudioUrl(currentTrack?.url) : null;
+  const currentTrack: PlaylistItem | undefined = playlist[0];
 
   // Attempt autoplay for custom uploaded audio
   useEffect(() => {

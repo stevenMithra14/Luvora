@@ -332,7 +332,7 @@ export async function updateGiftApi(editToken: string, data: WizardData): Promis
     title: data.title || data.coverTitle || 'A Special Gift For You',
     message: data.message || '',
     theme_id: data.themeId || 'theme-romantic',
-    music_url: data.musicUrl || null,
+    music_url: data.spotifyTrack ? (data.spotifyTrack.spotifyUrl || data.musicUrl) : (data.musicUrl || null),
     password: data.password && data.password.trim() ? data.password.trim() : null,
     password_hint: data.passwordHint && data.passwordHint.trim() ? data.passwordHint.trim() : null,
     password_enabled: Boolean(data.password && data.password.trim()),
@@ -365,13 +365,22 @@ export async function updateGiftApi(editToken: string, data: WizardData): Promis
         display_order: data.interactives.length,
         is_enabled: true
       }] : []),
+      ...(data.spotifyTrack ? [{
+        interactive_type: 'spotify_music',
+        configuration_json: {
+          spotifyTrack: data.spotifyTrack,
+          musicSource: data.musicSource || 'spotify'
+        },
+        display_order: data.interactives.length + 1,
+        is_enabled: true
+      }] : []),
       {
         interactive_type: 'cake_box_config',
         configuration_json: {
           cakeConfig: data.cakeConfig,
           giftBoxConfig: data.giftBoxConfig
         },
-        display_order: data.interactives.length + 1,
+        display_order: data.interactives.length + 2,
         is_enabled: true
       }
     ],
