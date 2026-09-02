@@ -4,6 +4,13 @@ import { Play, Pause } from 'lucide-react';
 import { MusicTrack, SpotifyTrack } from '../../context/WizardContext';
 import { resolveMediaUrl, fetchSpotifyOEmbed } from '../../services/giftService';
 
+declare global {
+  interface Window {
+    onSpotifyIframeApiReady?: (IFrameAPI: any) => void;
+    SpotifyIframeApi?: any;
+  }
+}
+
 interface FloatingCassettePlayerProps {
   tracks?: MusicTrack[];
   singleMusicUrl?: string;
@@ -52,6 +59,35 @@ const getPlayableAudioUrl = (rawUrl?: string): string | null => {
   return resolveMediaUrl(trimmed);
 };
 
+// Singleton Loader for Official Spotify iFrame API (https://open.spotify.com/embed/iframe-api/v1)
+let isScriptLoading = false;
+let spotifyIframeApiInstance: any = null;
+const apiReadyCallbacks: ((api: any) => void)[] = [];
+
+const loadSpotifyIframeApi = (callback: (api: any) => void) => {
+  if (spotifyIframeApiInstance || window.SpotifyIframeApi) {
+    callback(spotifyIframeApiInstance || window.SpotifyIframeApi);
+    return;
+  }
+
+  apiReadyCallbacks.push(callback);
+
+  if (!isScriptLoading) {
+    isScriptLoading = true;
+    window.onSpotifyIframeApiReady = (IFrameAPI: any) => {
+      spotifyIframeApiInstance = IFrameAPI;
+      window.SpotifyIframeApi = IFrameAPI;
+      apiReadyCallbacks.forEach((cb) => cb(IFrameAPI));
+      apiReadyCallbacks.length = 0;
+    };
+
+    const script = document.createElement('script');
+    script.src = 'https://open.spotify.com/embed/iframe-api/v1';
+    script.async = true;
+    document.body.appendChild(script);
+  }
+};
+
 export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
   tracks,
   singleMusicUrl,
@@ -59,6 +95,11 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
   autoStart = true,
 }) => {
   const [fetchedMetadata, setFetchedMetadata] = useState<{ title?: string; artist?: string; albumArt?: string } | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const embedContainerRef = useRef<HTMLDivElement | null>(null);
+  const embedControllerRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Extract exact Spotify track ID from spotifyTrack prop or singleMusicUrl string
   const spotifyTrackId = spotifyTrack?.id || parseSpotifyTrackId(spotifyTrack?.spotifyUrl) || parseSpotifyTrackId(singleMusicUrl);
@@ -67,7 +108,7 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
   const cleanSpotifyUrl = spotifyTrack?.spotifyUrl || (spotifyTrackId ? `https://open.spotify.com/track/${spotifyTrackId}` : (singleMusicUrl || ''));
   const audioUrl = !isSpotifyTrack ? getPlayableAudioUrl(singleMusicUrl || (tracks && tracks[0]?.url)) : null;
 
-  // Dynamically fetch metadata for Spotify track using Spotify's official oEmbed API if title/artist is missing
+  // Dynamically fetch metadata for Spotify track using Spotify's official oEmbed API
   useEffect(() => {
     let isMounted = true;
     if (isSpotifyTrack && cleanSpotifyUrl) {
@@ -83,6 +124,55 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
     }
     return () => { isMounted = false; };
   }, [isSpotifyTrack, cleanSpotifyUrl]);
+
+  // Initialize official Spotify EmbedController via Spotify iFrame API
+  useEffect(() => {
+    if (!isSpotifyTrack || !spotifyTrackId || !embedContainerRef.current) return;
+
+    let isMounted = true;
+
+    loadSpotifyIframeApi((IFrameAPI) => {
+      if (!isMounted || !embedContainerRef.current) return;
+
+      const element = embedContainerRef.current;
+      element.innerHTML = '';
+
+      const options = {
+        uri: `spotify:track:${spotifyTrackId}`,
+        width: '100%',
+        height: '80',
+      };
+
+      const callback = (EmbedController: any) => {
+        if (!isMounted) return;
+        embedControllerRef.current = EmbedController;
+
+        EmbedController.addListener('playback_started', () => {
+          if (isMounted) setIsPlaying(true);
+        });
+
+        EmbedController.addListener('playback_update', (e: any) => {
+          if (isMounted && e && e.data) {
+            setIsPlaying(!e.data.isPaused);
+          }
+        });
+      };
+
+      IFrameAPI.createController(element, options, callback);
+    });
+
+    return () => {
+      isMounted = false;
+      if (embedControllerRef.current) {
+        try {
+          embedControllerRef.current.destroy?.();
+        } catch (e) {
+          // ignore
+        }
+        embedControllerRef.current = null;
+      }
+    };
+  }, [isSpotifyTrack, spotifyTrackId]);
 
   const playlist = React.useMemo<PlaylistItem[]>(() => {
     if (isSpotifyTrack && spotifyTrackId) {
@@ -118,9 +208,6 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
     }
     return [];
   }, [isSpotifyTrack, spotifyTrackId, spotifyTrack, fetchedMetadata, cleanSpotifyUrl, tracks, audioUrl]);
-
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentTrack: PlaylistItem | undefined = playlist[0];
 
@@ -159,7 +246,11 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
 
   const togglePlay = () => {
     if (isSpotifyTrack) {
-      setIsPlaying((prev) => !prev);
+      if (embedControllerRef.current) {
+        embedControllerRef.current.togglePlay();
+      } else if (cleanSpotifyUrl) {
+        window.open(cleanSpotifyUrl, '_blank', 'noopener,noreferrer');
+      }
       return;
     }
 
@@ -198,17 +289,18 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
         />
       )}
 
-      {/* Visually Hidden Spotify Iframe element for official Spotify playback when playing */}
-      {isSpotifyTrack && spotifyTrackId && isPlaying && (
-        <div className="sr-only opacity-0 pointer-events-none w-0 h-0 overflow-hidden absolute">
-          <iframe
-            title="Spotify Background Audio"
-            src={`https://open.spotify.com/embed/track/${spotifyTrackId}?utm_source=generator&theme=0&autoplay=1`}
-            width="100%"
-            height="80"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          />
-        </div>
+      {/* Spotify iFrame API Container (visually hidden while active & functional for EmbedController) */}
+      {isSpotifyTrack && (
+        <div
+          ref={embedContainerRef}
+          className="w-full absolute opacity-0 pointer-events-none -z-10"
+          style={{
+            height: '80px',
+            top: '0',
+            left: '0',
+            overflow: 'hidden',
+          }}
+        />
       )}
 
       {/* ONLY ONE VISIBLE PLAYER: THE RED SPOTIFY-STYLE CARD */}
