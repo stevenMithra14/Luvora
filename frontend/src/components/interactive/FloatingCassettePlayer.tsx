@@ -147,6 +147,20 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
         if (!isMounted) return;
         embedControllerRef.current = EmbedController;
 
+        // Ensure injected iframe remains completely hidden off-screen
+        if (element) {
+          const iframe = element.querySelector('iframe');
+          if (iframe) {
+            iframe.style.width = '1px';
+            iframe.style.height = '1px';
+            iframe.style.opacity = '0';
+            iframe.style.visibility = 'hidden';
+            iframe.style.position = 'fixed';
+            iframe.style.top = '-9999px';
+            iframe.style.left = '-9999px';
+          }
+        }
+
         EmbedController.addListener('playback_started', () => {
           if (isMounted) setIsPlaying(true);
         });
@@ -278,19 +292,24 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
 
   return (
     <>
-      {/* Off-Screen Spotify iFrame API Container (EmbedController remains 100% functional while taking 0 visible layout space) */}
+      {/* Off-Screen Spotify iFrame API Container (Hidden 1px off-screen so no wide top bar ever renders) */}
       {isSpotifyTrack && (
         <div
           ref={embedContainerRef}
+          aria-hidden="true"
           style={{
             position: 'fixed',
             top: '-9999px',
             left: '-9999px',
-            width: '300px',
-            height: '80px',
-            opacity: 0.01,
+            width: '1px',
+            height: '1px',
+            maxWidth: '1px',
+            maxHeight: '1px',
+            opacity: 0,
+            overflow: 'hidden',
             pointerEvents: 'none',
             zIndex: -9999,
+            visibility: 'hidden',
           }}
         />
       )}
@@ -307,7 +326,7 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
           />
         )}
 
-        {/* ONLY ONE VISIBLE PLAYER: THE RED SPOTIFY-STYLE CARD */}
+        {/* ONLY ONE VISIBLE PLAYER: THE RED SPOTIFY-STYLE CARD IN TOP RIGHT CORNER */}
         <motion.div
           initial={{ opacity: 0, y: -15, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
