@@ -36,6 +36,11 @@ export const PhotoGoodieEditor: React.FC<PhotoGoodieEditorProps> = ({ goodie, on
   };
 
   const handleSave = () => {
+    if (photoUrl.startsWith('blob:')) {
+      setUploadError('Temporary browser blob URLs cannot be saved. Please upload the photo file.');
+      return;
+    }
+
     const finalTitle = title.trim() || 'A Special Photo';
     onSave(goodie.id, {
       title: finalTitle,

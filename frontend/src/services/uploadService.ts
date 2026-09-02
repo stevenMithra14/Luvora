@@ -76,15 +76,6 @@ export async function compressImageIfNeeded(file: File, maxDim = 1920, quality =
   });
 }
 
-const fileToDataUrlLocal = (file: File | Blob): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (e) => reject(e);
-    reader.readAsDataURL(file);
-  });
-};
-
 export async function uploadPhotoFile(
   rawFile: File,
   onProgress?: (percent: number) => void
@@ -126,18 +117,17 @@ export async function uploadPhotoFile(
           reject(new Error('Failed to parse server upload response.'));
         }
       } else {
-        // Fallback to Data URL if server upload returns error
-        fileToDataUrlLocal(file)
-          .then((dataUrl) => resolve({ status: 'success', url: dataUrl, filename: file.name }))
-          .catch(() => reject(new Error(`Server error (${xhr.status}) during photo upload.`)));
+        try {
+          const errData = JSON.parse(xhr.responseText);
+          reject(new Error(errData.detail || `Server error (${xhr.status}) during photo upload.`));
+        } catch {
+          reject(new Error(`Server error (${xhr.status}) during photo upload.`));
+        }
       }
     });
 
     xhr.addEventListener('error', () => {
-      // Fallback to Data URL on network error
-      fileToDataUrlLocal(file)
-        .then((dataUrl) => resolve({ status: 'success', url: dataUrl, filename: file.name }))
-        .catch(() => reject(new Error('Network error occurred during photo upload.')));
+      reject(new Error('Network error occurred during photo upload. Please check your connection.'));
     });
 
     xhr.open('POST', `${API_BASE_URL}/upload/photo`);

@@ -549,7 +549,7 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
             </button>
 
             <div className="max-w-3xl max-h-[85vh] flex flex-col items-center justify-center p-2 text-center space-y-3">
-              <img src={zoomedPhoto.fileUrl} alt={zoomedPhoto.caption || 'Zoomed Photo'} className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl" />
+              <img src={resolveMediaUrl(zoomedPhoto.fileUrl)} alt={zoomedPhoto.caption || 'Zoomed Photo'} className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl" />
               {zoomedPhoto.caption && <p className="font-serif text-sm text-slate-200 italic">"{zoomedPhoto.caption}"</p>}
             </div>
           </div>
@@ -570,7 +570,7 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
 
             <div className="w-full max-w-3xl flex flex-col items-center justify-center p-2">
               <video
-                src={fullscreenVideo.fileUrl}
+                src={resolveMediaUrl(fullscreenVideo.fileUrl)}
                 controls
                 autoPlay
                 className="w-full max-h-[75vh] object-contain rounded-xl"

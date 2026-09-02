@@ -35,6 +35,11 @@ export const VideoGoodieEditor: React.FC<VideoGoodieEditorProps> = ({ goodie, on
   };
 
   const handleSave = () => {
+    if (videoUrl.startsWith('blob:')) {
+      setUploadError('Temporary browser blob URLs cannot be saved. Please upload the video file.');
+      return;
+    }
+
     onSave(goodie.id, {
       title,
       description: caption || 'Video memory clip',

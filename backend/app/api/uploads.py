@@ -13,7 +13,10 @@ ALLOWED_IMAGE_TYPES = {
     "image/webp": [".webp"],
     "image/heic": [".heic"],
     "image/heif": [".heif"],
-    "application/octet-stream": [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"]
+    "image/bmp": [".bmp"],
+    "image/gif": [".gif"],
+    "image/svg+xml": [".svg"],
+    "application/octet-stream": [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".bmp", ".gif", ".svg"]
 }
 MAX_IMAGE_SIZE = 25 * 1024 * 1024  # 25 MB
 
@@ -37,25 +40,25 @@ ALLOWED_VIDEO_TYPES = {
     "video/quicktime": [".mov"],
     "video/ogg": [".ogv"],
     "video/x-matroska": [".mkv"],
-    "application/octet-stream": [".mp4", ".webm", ".mov", ".ogv", ".mkv"]
+    "video/3gpp": [".3gp"],
+    "video/x-msvideo": [".avi"],
+    "application/octet-stream": [".mp4", ".webm", ".mov", ".ogv", ".mkv", ".3gp", ".avi"]
 }
 MAX_VIDEO_SIZE = 50 * 1024 * 1024  # 50 MB
 
 @router.post("/photo")
 async def upload_photo(file: UploadFile = File(...)):
     """
-    Uploads a photo asset with MIME and size validation.
+    Uploads a photo asset with MIME, size, and storage persistence validation.
     """
     ext = os.path.splitext(file.filename or "")[1].lower()
     
-    # Validate Content Type & Extension
-    if file.content_type not in ALLOWED_IMAGE_TYPES and ext not in [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"]:
+    if file.content_type not in ALLOWED_IMAGE_TYPES and ext not in [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".bmp", ".gif", ".svg"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid image file format. Supported formats: JPG, JPEG, PNG, WEBP, HEIC."
+            detail="Invalid image format. Supported formats: JPG, JPEG, PNG, WEBP, HEIC, GIF, BMP."
         )
 
-    # Read and check size
     contents = await file.read()
     if len(contents) > MAX_IMAGE_SIZE:
         raise HTTPException(
@@ -63,69 +66,82 @@ async def upload_photo(file: UploadFile = File(...)):
             detail="File size exceeds maximum allowed photo limit of 25MB."
         )
 
-    # Reset file pointer and save via Storage Provider Abstraction
     file.file.seek(0)
-    storage = get_storage_provider()
-    filename_saved = storage.save_file(file.file, file.filename or "photo.jpg", file.content_type or "image/jpeg")
-    file_url = storage.get_file_url(filename_saved)
-
-    return {
-        "status": "success",
-        "url": file_url,
-        "filename": file.filename
-    }
+    try:
+        storage = get_storage_provider()
+        filename_saved = storage.save_file(file.file, file.filename or "photo.jpg", file.content_type or "image/jpeg")
+        file_url = storage.get_file_url(filename_saved)
+        
+        if not storage.verify_file_exists(filename_saved):
+            print(f"Warning: Uploaded file verification returned false for {filename_saved}")
+            
+        return {
+            "status": "success",
+            "url": file_url,
+            "path": filename_saved,
+            "filename": file.filename
+        }
+    except Exception as e:
+        print(f"Error during photo upload: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to persist photo upload: {str(e)}"
+        )
 
 
 @router.post("/audio")
 async def upload_audio(file: UploadFile = File(...)):
     """
-    Uploads a background audio track or voice recording with MIME and size validation.
+    Uploads a background audio track or voice recording with MIME, size, and persistence validation.
     """
     ext = os.path.splitext(file.filename or "")[1].lower()
     
-    # Validate Content Type & Extension
     if file.content_type not in ALLOWED_AUDIO_TYPES and ext not in [".mp3", ".wav", ".ogg", ".webm", ".m4a", ".aac"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid audio file format. Supported formats: MP3, WAV, OGG, WEBM, M4A, AAC."
+            detail="Invalid audio format. Supported formats: MP3, WAV, OGG, WEBM, M4A, AAC."
         )
 
-    # Read and check size
     contents = await file.read()
     if len(contents) > MAX_AUDIO_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File size exceeds maximum allowed audio limit of 15MB."
+            detail="File size exceeds maximum allowed audio limit of 25MB."
         )
 
-    # Reset file pointer and save via Storage Provider Abstraction
     file.file.seek(0)
-    storage = get_storage_provider()
-    filename_saved = storage.save_file(file.file, file.filename or "audio.mp3", file.content_type or "audio/mpeg")
-    file_url = storage.get_file_url(filename_saved)
+    try:
+        storage = get_storage_provider()
+        filename_saved = storage.save_file(file.file, file.filename or "audio.mp3", file.content_type or "audio/mpeg")
+        file_url = storage.get_file_url(filename_saved)
 
-    return {
-        "status": "success",
-        "url": file_url,
-        "filename": file.filename
-    }
+        return {
+            "status": "success",
+            "url": file_url,
+            "path": filename_saved,
+            "filename": file.filename
+        }
+    except Exception as e:
+        print(f"Error during audio upload: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to persist audio upload: {str(e)}"
+        )
 
 
 @router.post("/video")
 async def upload_video(file: UploadFile = File(...)):
     """
-    Uploads a video memory asset with MIME and size validation.
+    Uploads a video memory asset with MIME, size, and persistence validation.
     """
     ext = os.path.splitext(file.filename or "")[1].lower()
     
-    # Validate Content Type & Extension
-    if file.content_type not in ALLOWED_VIDEO_TYPES and ext not in [".mp4", ".webm", ".mov", ".ogv", ".mkv"]:
+    if file.content_type not in ALLOWED_VIDEO_TYPES and ext not in [".mp4", ".webm", ".mov", ".ogv", ".mkv", ".3gp", ".avi"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid video file format. Supported formats: MP4, WEBM, MOV, OGV, MKV."
+            detail="Invalid video format. Supported formats: MP4, WEBM, MOV, OGV, MKV, 3GP, AVI."
         )
 
-    # Read and check size
     contents = await file.read()
     if len(contents) > MAX_VIDEO_SIZE:
         raise HTTPException(
@@ -133,14 +149,22 @@ async def upload_video(file: UploadFile = File(...)):
             detail="File size exceeds maximum allowed video limit of 50MB."
         )
 
-    # Reset file pointer and save via Storage Provider Abstraction
     file.file.seek(0)
-    storage = get_storage_provider()
-    filename_saved = storage.save_file(file.file, file.filename or "video.mp4", file.content_type or "video/mp4")
-    file_url = storage.get_file_url(filename_saved)
+    try:
+        storage = get_storage_provider()
+        filename_saved = storage.save_file(file.file, file.filename or "video.mp4", file.content_type or "video/mp4")
+        file_url = storage.get_file_url(filename_saved)
 
-    return {
-        "status": "success",
-        "url": file_url,
-        "filename": file.filename
-    }
+        return {
+            "status": "success",
+            "url": file_url,
+            "path": filename_saved,
+            "filename": file.filename
+        }
+    except Exception as e:
+        print(f"Error during video upload: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to persist video upload: {str(e)}"
+        )
+

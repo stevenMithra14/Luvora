@@ -277,9 +277,9 @@ export const VoiceGoodieEditor: React.FC<VoiceGoodieEditorProps> = ({ goodie, on
         finalUrl = res.url;
       }
 
-      if (!finalUrl) {
+      if (!finalUrl || finalUrl.startsWith('blob:')) {
         setErrorType('unknown');
-        setMicError('Failed to process voice note audio. Please try again.');
+        setMicError('Failed to upload voice note to persistent storage. Please try again.');
         setIsUploading(false);
         return;
       }
