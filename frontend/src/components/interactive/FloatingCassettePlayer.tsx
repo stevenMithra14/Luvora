@@ -39,8 +39,8 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
         {
           id: `spotify-${spId || Date.now()}`,
           url: spotifyTrack.previewUrl || spotifyTrack.spotifyUrl || '',
-          title: spotifyTrack.name || 'Tum Jo Aaye',
-          artist: spotifyTrack.artist || 'Rahat Fateh Ali Khan',
+          title: spotifyTrack.name || 'Spotify Track',
+          artist: spotifyTrack.artist || 'Spotify Artist',
           albumCoverUrl: spotifyTrack.albumArt || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80',
           isSpotify: true,
           spotifyUrl: spotifyTrack.spotifyUrl || (spId ? `https://open.spotify.com/track/${spId}` : ''),
@@ -83,7 +83,6 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
   }, [tracks, singleMusicUrl, spotifyTrack]);
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showSpotifyEmbed, setShowSpotifyEmbed] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentTrack = playlist[0];
@@ -126,11 +125,7 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
 
   const togglePlay = () => {
     if (isSpotifyTrack) {
-      if (spotifyTrackId) {
-        setShowSpotifyEmbed((prev) => !prev);
-      } else if (currentTrack.spotifyUrl) {
-        window.open(currentTrack.spotifyUrl, '_blank', 'noopener,noreferrer');
-      }
+      setIsPlaying((prev) => !prev);
       return;
     }
 
@@ -158,6 +153,7 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
 
   return (
     <div className="fixed top-3 right-3 sm:top-4 sm:right-4 z-50 select-none">
+      {/* Hidden Audio element for custom uploaded audio files */}
       {!isSpotifyTrack && audioUrl && (
         <audio
           ref={audioRef}
@@ -168,11 +164,24 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
         />
       )}
 
-      {/* COMPACT SPOTIFY-STYLE CARD BACKGROUND MUSIC PLAYER (MATCHES SCREENSHOT 3) */}
+      {/* Visually Hidden Spotify Iframe element for official Spotify playback when playing */}
+      {isSpotifyTrack && spotifyTrackId && isPlaying && (
+        <div className="sr-only opacity-0 pointer-events-none w-0 h-0 overflow-hidden absolute">
+          <iframe
+            title="Spotify Background Audio"
+            src={`https://open.spotify.com/embed/track/${spotifyTrackId}?utm_source=generator&theme=0&autoplay=1`}
+            width="100%"
+            height="80"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          />
+        </div>
+      )}
+
+      {/* ONLY ONE VISIBLE PLAYER: THE RED SPOTIFY-STYLE CARD */}
       <motion.div
         initial={{ opacity: 0, y: -15, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="relative flex flex-col p-2.5 sm:p-3 rounded-2xl bg-gradient-to-r from-[#800000] via-[#900000] to-[#700000] border border-white/20 shadow-2xl backdrop-blur-md text-white w-[230px] sm:w-[300px]"
+        className="relative flex items-center p-2.5 sm:p-3 rounded-2xl bg-gradient-to-r from-[#800000] via-[#900000] to-[#700000] border border-white/20 shadow-2xl backdrop-blur-md text-white w-[230px] sm:w-[300px]"
       >
         <div className="flex items-center gap-2.5 w-full">
           {/* Left: Square Album Artwork */}
@@ -236,22 +245,6 @@ export const FloatingCassettePlayer: React.FC<FloatingCassettePlayerProps> = ({
             </button>
           </div>
         </div>
-
-        {/* Embedded Collapsible Spotify Player Widget */}
-        {showSpotifyEmbed && isSpotifyTrack && spotifyTrackId && (
-          <div className="mt-2 pt-2 border-t border-white/20">
-            <iframe
-              title="Spotify Embedded Player"
-              src={`https://open.spotify.com/embed/track/${spotifyTrackId}?utm_source=generator&theme=0`}
-              width="100%"
-              height="80"
-              frameBorder="0"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-              className="rounded-xl border border-white/10 bg-black"
-            />
-          </div>
-        )}
       </motion.div>
     </div>
   );
