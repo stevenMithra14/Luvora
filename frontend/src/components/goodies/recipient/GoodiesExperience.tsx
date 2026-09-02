@@ -658,19 +658,6 @@ export const GoodiesExperience: React.FC<GoodiesExperienceProps> = ({
                       </div>
                     )}
 
-                    {/* Standard HTML Audio Player for guaranteed browser audio playback */}
-                    <div className="pt-1">
-                      <audio
-                        ref={audioRef}
-                        src={getPlayableAudioUrl(activeGoodie.mediaUrl || activeGoodie.configurationJson?.audioUrl, 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3')}
-                        onPlay={() => setIsPlayingAudio(true)}
-                        onPause={() => setIsPlayingAudio(false)}
-                        onEnded={() => setIsPlayingAudio(false)}
-                        controls
-                        className="w-full h-8 rounded-lg accent-[#800000] opacity-90 hover:opacity-100 transition-opacity"
-                      />
-                    </div>
-
                     {activeGoodie.configurationJson?.message && (
                       <p className="text-xs text-slate-700 italic font-serif pt-2 text-center">
                         "{activeGoodie.configurationJson.message}"
