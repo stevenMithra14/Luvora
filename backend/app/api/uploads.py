@@ -59,7 +59,7 @@ async def upload_photo(file: UploadFile = File(...)):
             detail="Invalid image format. Supported formats: JPG, JPEG, PNG, WEBP, HEIC, GIF, BMP."
         )
 
-    contents = await file.read()
+    contents = file.file.read()
     if len(contents) > MAX_IMAGE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -102,7 +102,7 @@ async def upload_audio(file: UploadFile = File(...)):
             detail="Invalid audio format. Supported formats: MP3, WAV, OGG, WEBM, M4A, AAC."
         )
 
-    contents = await file.read()
+    contents = file.file.read()
     if len(contents) > MAX_AUDIO_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -142,7 +142,7 @@ async def upload_video(file: UploadFile = File(...)):
             detail="Invalid video format. Supported formats: MP4, WEBM, MOV, OGV, MKV, 3GP, AVI."
         )
 
-    contents = await file.read()
+    contents = file.file.read()
     if len(contents) > MAX_VIDEO_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

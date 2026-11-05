@@ -226,5 +226,27 @@ class TestDatabaseConnectionAndPublishing(unittest.TestCase):
         self.assertEqual(unlocked_view.message, "Top secret love confession")
         self.assertEqual(len(unlocked_view.photos), 1)
 
+    def test_psycopg2_driver_availability(self):
+        """Verify psycopg2 module is importable and has valid version."""
+        import psycopg2
+        self.assertTrue(hasattr(psycopg2, "__version__"))
+        self.assertTrue(psycopg2.__version__.startswith("2."))
+
+    def test_postgresql_dialect_driver_initialization(self):
+        """Verify SQLAlchemy initializes PostgreSQL engine with psycopg2 driver across scheme variants."""
+        from sqlalchemy import create_engine
+        test_schemes = [
+            "postgresql+psycopg2://user:pass@localhost:5432/test_db",
+            "postgresql://user:pass@localhost:5432/test_db"
+        ]
+        for scheme_url in test_schemes:
+            if scheme_url.startswith("postgresql://"):
+                normalized = scheme_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+            else:
+                normalized = scheme_url
+            test_engine = create_engine(normalized)
+            self.assertEqual(test_engine.dialect.name, "postgresql")
+            self.assertEqual(test_engine.dialect.driver, "psycopg2")
+
 if __name__ == "__main__":
     unittest.main()

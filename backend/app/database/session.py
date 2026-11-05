@@ -13,9 +13,14 @@ logger = logging.getLogger("luvora.database")
 # Fetch DATABASE_URL from environment variable with SQLite fallback
 raw_db_url = os.getenv("DATABASE_URL", "sqlite:///./luvora_dev.db").strip()
 
-# Fix Heroku/Render/Supabase postgres:// scheme compatibility for SQLAlchemy 2.0
+# Explicitly normalize PostgreSQL URL schemes to postgresql+psycopg2://
+# Ensures SQLAlchemy always uses the installed psycopg2 driver across all SQLAlchemy versions
 if raw_db_url.startswith("postgres://"):
-    DATABASE_URL = raw_db_url.replace("postgres://", "postgresql://", 1)
+    DATABASE_URL = raw_db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+elif raw_db_url.startswith("postgresql+psycopg://"):
+    DATABASE_URL = raw_db_url.replace("postgresql+psycopg://", "postgresql+psycopg2://", 1)
+elif raw_db_url.startswith("postgresql://"):
+    DATABASE_URL = raw_db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 else:
     DATABASE_URL = raw_db_url
 
