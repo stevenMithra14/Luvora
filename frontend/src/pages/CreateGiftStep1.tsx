@@ -37,7 +37,7 @@ export const CreateGiftStep1: React.FC = () => {
     },
     {
       id: 'friendship',
-      title: 'Friendship',
+      title: 'Friendship Celebration',
       subtitle: 'Inside jokes, photo loops & surprises',
       icon: Sparkles,
       badge: 'Fun',

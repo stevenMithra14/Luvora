@@ -307,6 +307,7 @@ export const CreateGiftInteractive: React.FC = () => {
           photos={data.photos}
           recipientName={data.recipientName}
           recipientDate={data.recipientDate}
+          occasion={data.occasion}
           onClose={() => setActivePreviewItem(null)}
         />
       )}

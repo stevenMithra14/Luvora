@@ -9,6 +9,7 @@ interface GamePreviewModalProps {
   photos?: any[];
   recipientName?: string;
   recipientDate?: string;
+  occasion?: string;
   onClose: () => void;
 }
 
@@ -17,6 +18,7 @@ export const GamePreviewModal: React.FC<GamePreviewModalProps> = ({
   photos = [],
   recipientName = 'Recipient',
   recipientDate,
+  occasion,
   onClose,
 }) => {
   if (!interactive) return null;
@@ -64,6 +66,7 @@ export const GamePreviewModal: React.FC<GamePreviewModalProps> = ({
               photos={photos}
               recipientName={recipientName}
               recipientDate={recipientDate}
+              occasion={occasion}
             />
           </div>
         </motion.div>

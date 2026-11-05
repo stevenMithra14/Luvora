@@ -7,6 +7,8 @@ import { GameRenderer } from '../games/GameRenderer';
 import { FinalMessage } from '../interactive/FinalMessage';
 import { GiftBoxUnboxing } from '../interactive/GiftBoxUnboxing';
 import { CakeStage } from '../interactive/CakeStage';
+import { FriendshipAnniversaryCountdown } from '../interactive/FriendshipAnniversaryCountdown';
+import { isFriendshipOccasion, formatFirstMetDate } from '../../utils/occasionUtils';
 import { MemoriesExperience } from '../interactive/MemoriesExperience';
 import { GoodiesExperience } from '../goodies/recipient/GoodiesExperience';
 import { FloatingCassettePlayer } from '../interactive/FloatingCassettePlayer';
@@ -17,8 +19,9 @@ interface PublicGiftExperienceProps {
 
 export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift: initialGift }) => {
   const [giftData, setGiftData] = useState<PublicGiftResponse>(initialGift);
-  // Sequential Stages: box -> cake -> intro -> games -> goodies -> memories -> final
-  const [activeStage, setActiveStage] = useState<'box' | 'cake' | 'intro' | 'games' | 'goodies' | 'memories' | 'final'>('box');
+  const isFriendship = isFriendshipOccasion(giftData.occasion_type);
+  // Sequential Stages: box -> anniversary (friendship) / cake (birthday) -> intro -> games -> goodies -> memories -> final
+  const [activeStage, setActiveStage] = useState<'box' | 'cake' | 'anniversary' | 'intro' | 'games' | 'goodies' | 'memories' | 'final'>('box');
   const theme = getThemeConfig(giftData.theme_id);
 
   const handleVerifyPassword = async (password: string) => {
@@ -35,7 +38,11 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
         console.error("Error fetching unlocked content:", e);
       }
     }
-    setActiveStage('cake');
+    if (isFriendship) {
+      setActiveStage('anniversary');
+    } else {
+      setActiveStage('cake');
+    }
   };
 
   const handleCakeComplete = () => {
@@ -126,8 +133,26 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
           </motion.div>
         )}
 
-        {/* STAGE 2 & 3: BIRTHDAY CAKE & CANDLE BLOW & CAKE CUTTING */}
-        {activeStage === 'cake' && (
+        {/* STAGE 2: FRIENDSHIP ANNIVERSARY COUNTDOWN (FRIENDSHIP ONLY) */}
+        {isFriendship && activeStage === 'anniversary' && (
+          <motion.div
+            key="anniversary"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.6 }}
+            className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6"
+          >
+            <FriendshipAnniversaryCountdown
+              firstMetDateStr={giftData.recipient_date}
+              recipientName={giftData.recipient_name}
+              onContinue={() => setActiveStage('intro')}
+            />
+          </motion.div>
+        )}
+
+        {/* STAGE 2 & 3: BIRTHDAY CAKE & CANDLE BLOW & CAKE CUTTING (NON-FRIENDSHIP ONLY) */}
+        {!isFriendship && activeStage === 'cake' && (
           <motion.div
             key="cake"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -164,8 +189,16 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
             </span>
 
             <h1 className="font-heading text-3xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight break-words">
-              Happy {giftData.occasion_type || 'Special Day'}, {giftData.recipient_name} ❤️
+              {isFriendship
+                ? `Happy Friendship Celebration, ${giftData.recipient_name} ❤️`
+                : `Happy ${giftData.occasion_type || 'Special Day'}, ${giftData.recipient_name} ❤️`}
             </h1>
+
+            {isFriendship && giftData.recipient_date && (
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/20 border border-purple-500/30 text-xs sm:text-sm text-purple-200">
+                <span>When We First Met: <strong className="text-white">{formatFirstMetDate(giftData.recipient_date)}</strong></span>
+              </div>
+            )}
 
             <p className="text-base sm:text-xl text-slate-300 font-serif italic">
               "Let's dive into your personalized games, digital goodies, photo & video memories, and heartfelt surprises..."
@@ -215,6 +248,7 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
                   photos={formattedPhotos}
                   recipientName={giftData.recipient_name}
                   recipientDate={giftData.recipient_date}
+                  occasion={giftData.occasion_type}
                 />
               </div>
             ))}

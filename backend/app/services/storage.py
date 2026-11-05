@@ -1,7 +1,10 @@
 import os
 import shutil
 import uuid
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
 from abc import ABC, abstractmethod
 from typing import BinaryIO
 

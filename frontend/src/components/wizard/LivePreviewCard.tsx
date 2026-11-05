@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Sparkles, Calendar, Gift, Music, Image as ImageIcon } from 'lucide-react';
+import { isFriendshipOccasion } from '../../utils/occasionUtils';
 
 interface LivePreviewCardProps {
   recipientName: string;
@@ -107,10 +108,14 @@ export const LivePreviewCard: React.FC<LivePreviewCardProps> = ({
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-800/80 text-pink-300 border border-slate-700/80 mb-4"
+              className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 ${
+                isFriendshipOccasion(occasion)
+                  ? 'bg-purple-950/80 text-purple-200 border border-purple-500/40'
+                  : 'bg-slate-800/80 text-pink-300 border border-slate-700/80'
+              }`}
             >
               <Calendar className="h-3.5 w-3.5 text-pink-400" />
-              <span>{formattedDate}</span>
+              <span>{isFriendshipOccasion(occasion) ? `When We First Met: ${formattedDate}` : formattedDate}</span>
             </motion.div>
           )}
 

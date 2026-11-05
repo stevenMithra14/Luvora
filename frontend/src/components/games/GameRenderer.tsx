@@ -8,6 +8,8 @@ import { WhoSaidItPlayable } from './WhoSaidItPlayable';
 import { GuessAgePlayable } from './GuessAgePlayable';
 import { MysteryBoxPlayable } from './MysteryBoxPlayable';
 import { BirthdayCountdown } from '../interactive/BirthdayCountdown';
+import { FriendshipAnniversaryCountdown } from '../interactive/FriendshipAnniversaryCountdown';
+import { isFriendshipOccasion } from '../../utils/occasionUtils';
 import { MemoryTimeline } from '../interactive/MemoryTimeline';
 import { SecretMessage } from '../interactive/SecretMessage';
 import { SurpriseButton } from '../interactive/SurpriseButton';
@@ -20,6 +22,7 @@ interface GameRendererProps {
   photos?: any[];
   recipientName?: string;
   recipientDate?: string;
+  occasion?: string;
 }
 
 export const GameRenderer: React.FC<GameRendererProps> = ({
@@ -28,7 +31,10 @@ export const GameRenderer: React.FC<GameRendererProps> = ({
   photos = [],
   recipientName = 'Recipient',
   recipientDate,
+  occasion,
 }) => {
+  const isFriendship = isFriendshipOccasion(occasion);
+
   switch (interactiveType) {
     // 1. Reusable Quiz Engines
     case 'quiz':
@@ -69,6 +75,14 @@ export const GameRenderer: React.FC<GameRendererProps> = ({
 
     // Traditional Interactive Modules
     case 'countdown':
+      if (isFriendship) {
+        return (
+          <FriendshipAnniversaryCountdown
+            firstMetDateStr={recipientDate}
+            recipientName={recipientName}
+          />
+        );
+      }
       return <BirthdayCountdown targetDateStr={recipientDate} recipientName={recipientName} />;
 
     case 'timeline':

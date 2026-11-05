@@ -13,11 +13,13 @@ import { AnimationControls } from '../components/wizard/editor/AnimationControls
 import { GiftBoxConfigurator } from '../components/wizard/customizers/GiftBoxConfigurator';
 import { CakeConfigurator } from '../components/wizard/customizers/CakeConfigurator';
 import { LiveDevicePreview } from '../components/wizard/preview/LiveDevicePreview';
+import { isFriendshipOccasion } from '../utils/occasionUtils';
 
 export const CreateGiftStep3: React.FC = () => {
   const navigate = useNavigate();
   const { data, nextStep, prevStep } = useWizard();
 
+  const isFriendship = isFriendshipOccasion(data.occasion);
   const [activeTab, setActiveTab] = useState<'box' | 'cake' | 'cover' | 'message' | 'theme' | 'typography' | 'background' | 'animation'>('box');
   const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -26,6 +28,12 @@ export const CreateGiftStep3: React.FC = () => {
       navigate('/create');
     }
   }, [data.occasion, navigate]);
+
+  useEffect(() => {
+    if (isFriendship && activeTab === 'cake') {
+      setActiveTab('box');
+    }
+  }, [isFriendship, activeTab]);
 
   const handleContinue = () => {
     nextStep();
@@ -53,6 +61,8 @@ export const CreateGiftStep3: React.FC = () => {
     { id: 'animation', label: 'Animation', icon: Sparkles },
   ] as const;
 
+  const availableTabs = isFriendship ? tabs.filter((t) => t.id !== 'cake') : tabs;
+
   return (
     <div className="min-h-[calc(100vh-4.5rem)] flex flex-col justify-between py-2 sm:py-4 px-3.5 sm:px-6 pb-32 sm:pb-12">
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col justify-start">
@@ -78,7 +88,9 @@ export const CreateGiftStep3: React.FC = () => {
                 Customize the Experience
               </h1>
               <p className="text-slate-400 text-xs sm:text-sm">
-                Fine-tune the gift box, birthday cake, lighting, typography, and interactive theme.
+                {isFriendship
+                  ? "Fine-tune the gift box, lighting, typography, and interactive theme."
+                  : "Fine-tune the gift box, birthday cake, lighting, typography, and interactive theme."}
               </p>
             </motion.div>
 
@@ -89,7 +101,7 @@ export const CreateGiftStep3: React.FC = () => {
                 ref={tabsRef}
                 className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none border-b border-slate-800 scroll-smooth pr-10"
               >
-                {tabs.map((tab) => {
+                {availableTabs.map((tab) => {
                   const IconComp = tab.icon;
                   const isActive = activeTab === tab.id;
 
@@ -120,7 +132,7 @@ export const CreateGiftStep3: React.FC = () => {
             {/* Active Control Body Box */}
             <div className="p-5 rounded-3xl bg-slate-900/60 border border-slate-800/90 backdrop-blur-xl max-h-[440px] overflow-y-auto">
               {activeTab === 'box' && <GiftBoxConfigurator />}
-              {activeTab === 'cake' && <CakeConfigurator />}
+              {!isFriendship && activeTab === 'cake' && <CakeConfigurator />}
               {activeTab === 'cover' && <CoverControls />}
               {activeTab === 'message' && <MessageControls />}
               {activeTab === 'theme' && <ThemeControls />}

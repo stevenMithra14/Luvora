@@ -6,6 +6,8 @@ import { GameRenderer } from '../../games/GameRenderer';
 import { FinalMessage } from '../../interactive/FinalMessage';
 import { GiftBoxUnboxing } from '../../interactive/GiftBoxUnboxing';
 import { CakeStage } from '../../interactive/CakeStage';
+import { FriendshipAnniversaryCountdown } from '../../interactive/FriendshipAnniversaryCountdown';
+import { isFriendshipOccasion, formatFirstMetDate } from '../../../utils/occasionUtils';
 import { MemoriesExperience } from '../../interactive/MemoriesExperience';
 import { GoodiesExperience } from '../../goodies/recipient/GoodiesExperience';
 import { FloatingCassettePlayer } from '../../interactive/FloatingCassettePlayer';
@@ -14,7 +16,8 @@ import { Heart, Sparkles } from 'lucide-react';
 export const RecipientGiftView: React.FC = () => {
   const { data } = useWizard();
   const theme = getThemeConfig(data.themeId);
-  const [activeStage, setActiveStage] = useState<'box' | 'cake' | 'intro' | 'games' | 'goodies' | 'memories' | 'final'>('box');
+  const isFriendship = isFriendshipOccasion(data.occasion);
+  const [activeStage, setActiveStage] = useState<'box' | 'cake' | 'anniversary' | 'intro' | 'games' | 'goodies' | 'memories' | 'final'>('box');
 
   const displayName = data.recipientName.trim() || 'Someone Special';
 
@@ -54,15 +57,27 @@ export const RecipientGiftView: React.FC = () => {
         >
           📦 Unboxing
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveStage('cake')}
-          className={`px-2 py-1 rounded-xl transition-all cursor-pointer ${
-            activeStage === 'cake' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          🎂 3D Cake
-        </button>
+        {isFriendship ? (
+          <button
+            type="button"
+            onClick={() => setActiveStage('anniversary')}
+            className={`px-2 py-1 rounded-xl transition-all cursor-pointer ${
+              activeStage === 'anniversary' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            ⏳ Countdown
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setActiveStage('cake')}
+            className={`px-2 py-1 rounded-xl transition-all cursor-pointer ${
+              activeStage === 'cake' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            🎂 3D Cake
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setActiveStage('games')}
@@ -119,13 +134,30 @@ export const RecipientGiftView: React.FC = () => {
               recipientName={displayName}
               password={data.password}
               passwordHint={data.passwordHint}
-              onOpenComplete={() => setActiveStage('cake')}
+              onOpenComplete={() => setActiveStage(isFriendship ? 'anniversary' : 'cake')}
             />
           </motion.div>
         )}
 
-        {/* STAGE 2 & 3: BIRTHDAY CAKE & CANDLES PREVIEW */}
-        {activeStage === 'cake' && (
+        {/* STAGE 2: FRIENDSHIP ANNIVERSARY COUNTDOWN PREVIEW (FRIENDSHIP ONLY) */}
+        {isFriendship && activeStage === 'anniversary' && (
+          <motion.div
+            key="anniversary"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="flex-1 flex flex-col items-center justify-center p-2"
+          >
+            <FriendshipAnniversaryCountdown
+              firstMetDateStr={data.recipientDate}
+              recipientName={displayName}
+              onContinue={() => setActiveStage('intro')}
+            />
+          </motion.div>
+        )}
+
+        {/* STAGE 2 & 3: BIRTHDAY CAKE & CANDLES PREVIEW (NON-FRIENDSHIP ONLY) */}
+        {!isFriendship && activeStage === 'cake' && (
           <motion.div
             key="cake"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -160,8 +192,16 @@ export const RecipientGiftView: React.FC = () => {
             </span>
 
             <h1 className="font-heading text-2xl sm:text-4xl font-extrabold text-white leading-tight break-words">
-              Happy {data.occasion || 'Special Day'}, {displayName} ❤️
+              {isFriendship
+                ? `Happy Friendship Celebration, ${displayName} ❤️`
+                : `Happy ${data.occasion || 'Special Day'}, ${displayName} ❤️`}
             </h1>
+
+            {isFriendship && data.recipientDate && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/25 text-xs text-purple-200">
+                <span>When We First Met: <strong className="text-white">{formatFirstMetDate(data.recipientDate, data.dontKnowYear)}</strong></span>
+              </div>
+            )}
 
             <button
               type="button"
@@ -206,6 +246,7 @@ export const RecipientGiftView: React.FC = () => {
                   photos={data.photos}
                   recipientName={displayName}
                   recipientDate={data.recipientDate}
+                  occasion={data.occasion}
                 />
               </div>
             ))}

@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, User, Calendar, Sparkles } from 'lucide-react';
 import { useWizard } from '../context/WizardContext';
 import { WizardProgress } from '../components/wizard/WizardProgress';
 import { LiveDevicePreview } from '../components/wizard/preview/LiveDevicePreview';
+import { isFriendshipOccasion } from '../utils/occasionUtils';
 
 export const CreateGiftStep2: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ export const CreateGiftStep2: React.FC = () => {
     setCustomization({ dontKnowYear: e.target.checked });
   };
 
+  const isFriendship = isFriendshipOccasion(data.occasion);
   const isNameValid = data.recipientName.trim().length >= 2;
 
   const handleContinue = () => {
@@ -94,13 +96,13 @@ export const CreateGiftStep2: React.FC = () => {
                 />
               </div>
 
-              {/* Important Date Field */}
+              {/* Important Date / When We First Met Field */}
               <div>
                 <label className="block text-xs font-extrabold uppercase tracking-wider text-sky-300 mb-2 flex items-center gap-2">
-                  <div className="p-1 rounded-lg bg-sky-500/20 text-sky-400">
+                  <div className={`p-1 rounded-lg ${isFriendship ? 'bg-purple-500/20 text-purple-400' : 'bg-sky-500/20 text-sky-400'}`}>
                     <Calendar className="h-4 w-4" />
                   </div>
-                  <span>Important Date (Optional)</span>
+                  <span>{isFriendship ? 'WHEN WE FIRST MET' : 'Important Date (Optional)'}</span>
                 </label>
                 <input
                   type="date"
@@ -108,6 +110,11 @@ export const CreateGiftStep2: React.FC = () => {
                   onChange={handleDateChange}
                   className="w-full px-4 py-3.5 rounded-2xl bg-slate-800/90 border-2 border-pink-500/50 text-sm font-semibold text-white focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-400/40 transition-all shadow-md shadow-pink-500/5"
                 />
+                {isFriendship && (
+                  <p className="text-xs text-purple-300 mt-1.5 font-medium">
+                    Select the date you first met to calculate your annual friendship anniversary countdown.
+                  </p>
+                )}
               </div>
 
               {/* Ultra Bright High Contrast Option Card for "I don't know the year" */}
@@ -132,7 +139,9 @@ export const CreateGiftStep2: React.FC = () => {
                     I don't know the exact year
                   </span>
                   <span className="text-xs text-pink-200 font-semibold mt-0.5">
-                    Track only day & month (ideal for annual birthdays & anniversaries)
+                    {isFriendship
+                      ? "Track only day & month (ideal for annual friendship anniversary countdown)"
+                      : "Track only day & month (ideal for annual birthdays & anniversaries)"}
                   </span>
                 </div>
               </label>

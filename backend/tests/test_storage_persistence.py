@@ -1,12 +1,24 @@
 import os
 import io
+import sys
 import unittest
-from fastapi.testclient import TestClient
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+try:
+    from fastapi.testclient import TestClient
+    HAS_TESTCLIENT = True
+except Exception:
+    TestClient = None
+    HAS_TESTCLIENT = False
+
 from app.main import app
 from app.services.storage import get_storage_provider, LocalStorageProvider, SupabaseStorageProvider
 
 class TestMediaStoragePersistence(unittest.TestCase):
     def setUp(self):
+        if not HAS_TESTCLIENT:
+            self.skipTest("TestClient requires httpx")
         self.client = TestClient(app)
         self.storage = get_storage_provider()
 
