@@ -117,14 +117,38 @@ def create_published_gift(gift_in: GiftCreate, db: Session = Depends(get_db)):
         db.add(gift)
         db.flush()
 
-        for idx, photo_data in enumerate(gift_in.photos):
-            photo = GiftPhoto(
-                gift_id=gift.id,
-                file_url=photo_data.file_url,
-                caption=photo_data.caption,
-                display_order=photo_data.display_order or idx
-            )
-            db.add(photo)
+        photos_to_save = []
+        for p in gift_in.photos:
+            if p.file_url and not str(p.file_url).startswith("blob:"):
+                photos_to_save.append(p)
+
+        if not photos_to_save:
+            # Fallback: check if photo_memories interactive has photos
+            for inter in gift_in.interactives:
+                if inter.interactive_type == "photo_memories":
+                    mems = (inter.configuration_json or {}).get("memories", [])
+                    for idx, m in enumerate(mems):
+                        if isinstance(m, dict) and m.get("fileUrl") and not str(m.get("fileUrl")).startswith("blob:"):
+                            photos_to_save.append(
+                                GiftPhoto(
+                                    gift_id=gift.id,
+                                    file_url=m["fileUrl"],
+                                    caption=m.get("caption") or m.get("title") or "",
+                                    display_order=m.get("displayOrder", idx)
+                                )
+                            )
+
+        for idx, photo_data in enumerate(photos_to_save):
+            if isinstance(photo_data, GiftPhoto):
+                db.add(photo_data)
+            else:
+                photo = GiftPhoto(
+                    gift_id=gift.id,
+                    file_url=photo_data.file_url,
+                    caption=photo_data.caption,
+                    display_order=photo_data.display_order or idx
+                )
+                db.add(photo)
 
         for idx, section_data in enumerate(gift_in.sections):
             section = GiftSection(
@@ -137,6 +161,7 @@ def create_published_gift(gift_in: GiftCreate, db: Session = Depends(get_db)):
             )
             db.add(section)
 
+        has_photo_memories = any(i.interactive_type == "photo_memories" for i in gift_in.interactives)
         for idx, interactive_data in enumerate(gift_in.interactives):
             if interactive_data.interactive_type not in ALLOWED_INTERACTIVE_TYPES:
                 raise HTTPException(
@@ -152,19 +177,46 @@ def create_published_gift(gift_in: GiftCreate, db: Session = Depends(get_db)):
             )
             db.add(interactive)
 
+        # If photos were provided but interactives was completely empty, auto-generate photo_memories interactive
+        if not gift_in.interactives and photos_to_save:
+            memories_list = [
+                {
+                    "id": f"mem-{idx}",
+                    "type": "photo",
+                    "fileUrl": p.file_url if isinstance(p, GiftPhoto) else p.file_url,
+                    "title": (p.caption if isinstance(p, GiftPhoto) else p.caption) or "Photo Memory",
+                    "caption": (p.caption if isinstance(p, GiftPhoto) else p.caption) or "",
+                    "date": "",
+                    "frameStyle": "polaroid",
+                    "displayOrder": idx
+                }
+                for idx, p in enumerate(photos_to_save)
+            ]
+            auto_mem_interactive = GiftInteractive(
+                gift_id=gift.id,
+                interactive_type="photo_memories",
+                configuration_json={"memories": memories_list},
+                display_order=0,
+                is_enabled=True
+            )
+            db.add(auto_mem_interactive)
+
         for idx, goodie_data in enumerate(gift_in.goodies):
             if goodie_data.goodie_type not in ALLOWED_GOODIE_TYPES:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Invalid goodie type: {goodie_data.goodie_type}"
                 )
+            clean_goodie_media = goodie_data.media_url
+            if clean_goodie_media and str(clean_goodie_media).startswith("blob:"):
+                clean_goodie_media = None
             goodie = GiftGoodie(
                 gift_id=gift.id,
                 goodie_type=goodie_data.goodie_type,
                 title=goodie_data.title,
                 description=goodie_data.description,
                 content=goodie_data.content,
-                media_url=goodie_data.media_url,
+                media_url=clean_goodie_media,
                 configuration_json=goodie_data.configuration_json,
                 display_order=goodie_data.display_order or idx,
                 is_enabled=goodie_data.is_enabled
@@ -406,66 +458,118 @@ def update_gift_by_edit_token(
             gift.password_hint = gift_update.password_hint
 
         if gift_update.photos is not None:
-            db.query(GiftPhoto).filter(GiftPhoto.gift_id == gift.id).delete()
-            for idx, photo_data in enumerate(gift_update.photos):
-                photo = GiftPhoto(
-                    gift_id=gift.id,
-                    file_url=photo_data.file_url,
-                    caption=photo_data.caption,
-                    display_order=photo_data.display_order or idx
-                )
-                db.add(photo)
+            # Filter out blob: and empty urls
+            valid_photos = [p for p in gift_update.photos if p.file_url and not str(p.file_url).startswith("blob:")]
+            
+            # If no direct photos passed in update, check if incoming photo_memories has memories
+            if not valid_photos and gift_update.interactives is not None:
+                for inter in gift_update.interactives:
+                    if inter.interactive_type == "photo_memories":
+                        mems = (inter.configuration_json or {}).get("memories", [])
+                        for idx, m in enumerate(mems):
+                            if isinstance(m, dict) and m.get("fileUrl") and not str(m.get("fileUrl")).startswith("blob:"):
+                                valid_photos.append(
+                                    GiftPhotoCreate(
+                                        file_url=m["fileUrl"],
+                                        caption=m.get("caption") or m.get("title") or "",
+                                        display_order=m.get("displayOrder", idx)
+                                    )
+                                )
+
+            # Only replace photos if we have valid replacement photos.
+            # If valid_photos is empty but photos already exist in DB, PRESERVE them.
+            # This protects against accidental deletion during theme switching or metadata edits.
+            if valid_photos:
+                db.query(GiftPhoto).filter(GiftPhoto.gift_id == gift.id).delete()
+                for idx, photo_data in enumerate(valid_photos):
+                    photo = GiftPhoto(
+                        gift_id=gift.id,
+                        file_url=photo_data.file_url,
+                        caption=photo_data.caption,
+                        display_order=photo_data.display_order or idx
+                    )
+                    db.add(photo)
 
         if gift_update.sections is not None:
-            db.query(GiftSection).filter(GiftSection.gift_id == gift.id).delete()
-            for idx, section_data in enumerate(gift_update.sections):
-                section = GiftSection(
-                    gift_id=gift.id,
-                    section_type=section_data.section_type,
-                    title=section_data.title,
-                    content=section_data.content,
-                    display_order=section_data.display_order or idx,
-                    is_enabled=section_data.is_enabled
-                )
-                db.add(section)
+            # Only wipe if incoming sections is non-empty or no sections exist in DB
+            existing_sections_count = db.query(GiftSection).filter(GiftSection.gift_id == gift.id).count()
+            if len(gift_update.sections) > 0 or existing_sections_count == 0:
+                db.query(GiftSection).filter(GiftSection.gift_id == gift.id).delete()
+                for idx, section_data in enumerate(gift_update.sections):
+                    section = GiftSection(
+                        gift_id=gift.id,
+                        section_type=section_data.section_type,
+                        title=section_data.title,
+                        content=section_data.content,
+                        display_order=section_data.display_order or idx,
+                        is_enabled=section_data.is_enabled
+                    )
+                    db.add(section)
 
         if gift_update.interactives is not None:
-            db.query(GiftInteractive).filter(GiftInteractive.gift_id == gift.id).delete()
-            for idx, interactive_data in enumerate(gift_update.interactives):
-                if interactive_data.interactive_type not in ALLOWED_INTERACTIVE_TYPES:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Invalid interactive/game type: {interactive_data.interactive_type}"
+            # Preserve system interactives (photo_memories, cake_box_config, spotify_music) if omitted in update
+            existing_interactives = db.query(GiftInteractive).filter(GiftInteractive.gift_id == gift.id).all()
+            existing_by_type = {i.interactive_type: i for i in existing_interactives}
+            incoming_types = {i.interactive_type for i in gift_update.interactives}
+
+            if len(gift_update.interactives) > 0 or not existing_interactives:
+                db.query(GiftInteractive).filter(GiftInteractive.gift_id == gift.id).delete()
+                for idx, interactive_data in enumerate(gift_update.interactives):
+                    if interactive_data.interactive_type not in ALLOWED_INTERACTIVE_TYPES:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Invalid interactive/game type: {interactive_data.interactive_type}"
+                        )
+                    interactive = GiftInteractive(
+                        gift_id=gift.id,
+                        interactive_type=interactive_data.interactive_type,
+                        configuration_json=interactive_data.configuration_json,
+                        display_order=interactive_data.display_order or idx,
+                        is_enabled=interactive_data.is_enabled
                     )
-                interactive = GiftInteractive(
-                    gift_id=gift.id,
-                    interactive_type=interactive_data.interactive_type,
-                    configuration_json=interactive_data.configuration_json,
-                    display_order=interactive_data.display_order or idx,
-                    is_enabled=interactive_data.is_enabled
-                )
-                db.add(interactive)
+                    db.add(interactive)
+
+                # Preserve system modules if omitted in incoming update
+                system_types = ["photo_memories", "cake_box_config", "spotify_music"]
+                for sys_type in system_types:
+                    if sys_type not in incoming_types and sys_type in existing_by_type:
+                        prev = existing_by_type[sys_type]
+                        preserved = GiftInteractive(
+                            gift_id=gift.id,
+                            interactive_type=prev.interactive_type,
+                            configuration_json=prev.configuration_json,
+                            display_order=len(gift_update.interactives) + 1,
+                            is_enabled=prev.is_enabled
+                        )
+                        db.add(preserved)
 
         if gift_update.goodies is not None:
-            db.query(GiftGoodie).filter(GiftGoodie.gift_id == gift.id).delete()
-            for idx, goodie_data in enumerate(gift_update.goodies):
-                if goodie_data.goodie_type not in ALLOWED_GOODIE_TYPES:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Invalid goodie type: {goodie_data.goodie_type}"
+            # Only wipe and replace if incoming goodies is non-empty, or no goodies currently exist in DB.
+            # This protects against empty goodies arrays wiping saved goodies during theme switching.
+            existing_goodies_count = db.query(GiftGoodie).filter(GiftGoodie.gift_id == gift.id).count()
+            if len(gift_update.goodies) > 0 or existing_goodies_count == 0:
+                db.query(GiftGoodie).filter(GiftGoodie.gift_id == gift.id).delete()
+                for idx, goodie_data in enumerate(gift_update.goodies):
+                    if goodie_data.goodie_type not in ALLOWED_GOODIE_TYPES:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Invalid goodie type: {goodie_data.goodie_type}"
+                        )
+                    clean_media_url = goodie_data.media_url
+                    if clean_media_url and str(clean_media_url).startswith("blob:"):
+                        clean_media_url = None
+                    goodie = GiftGoodie(
+                        gift_id=gift.id,
+                        goodie_type=goodie_data.goodie_type,
+                        title=goodie_data.title,
+                        description=goodie_data.description,
+                        content=goodie_data.content,
+                        media_url=clean_media_url,
+                        configuration_json=goodie_data.configuration_json,
+                        display_order=goodie_data.display_order or idx,
+                        is_enabled=goodie_data.is_enabled
                     )
-                goodie = GiftGoodie(
-                    gift_id=gift.id,
-                    goodie_type=goodie_data.goodie_type,
-                    title=goodie_data.title,
-                    description=goodie_data.description,
-                    content=goodie_data.content,
-                    media_url=goodie_data.media_url,
-                    configuration_json=goodie_data.configuration_json,
-                    display_order=goodie_data.display_order or idx,
-                    is_enabled=goodie_data.is_enabled
-                )
-                db.add(goodie)
+                    db.add(goodie)
 
         db.commit()
         db.refresh(gift)

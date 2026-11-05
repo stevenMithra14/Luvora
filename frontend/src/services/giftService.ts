@@ -215,7 +215,7 @@ export const resolveMediaUrl = (rawUrl?: string, fallbackUrl: string = ''): stri
   if (!rawUrl || typeof rawUrl !== 'string') return fallbackUrl;
   const trimmed = rawUrl.trim();
   if (!trimmed) return fallbackUrl;
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) return trimmed;
   if (trimmed.startsWith('/uploads/')) {
     const backendOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
     return `${backendOrigin}${trimmed}`;
@@ -223,6 +223,17 @@ export const resolveMediaUrl = (rawUrl?: string, fallbackUrl: string = ''): stri
   if (trimmed.startsWith('uploads/')) {
     const backendOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
     return `${backendOrigin}/${trimmed}`;
+  }
+  const cleanPath = trimmed.replace(/^\/+/, '');
+  if (cleanPath.startsWith('gifts/') || cleanPath.startsWith('luvora-media/')) {
+    const pathWithoutBucket = cleanPath.startsWith('luvora-media/') ? cleanPath.replace(/^luvora-media\//, '') : cleanPath;
+    const viteSupabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
+    if (viteSupabaseUrl) {
+      const base = viteSupabaseUrl.replace(/\/+$/, '');
+      return `${base}/storage/v1/object/public/luvora-media/${pathWithoutBucket}`;
+    }
+    const backendOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
+    return `${backendOrigin}/uploads/${cleanPath.split('/').pop()}`;
   }
   return trimmed;
 };
@@ -250,15 +261,38 @@ export async function fetchSpotifyOEmbed(spotifyUrl: string): Promise<{
 }
 
 export async function publishGiftApi(data: WizardData): Promise<PublishedGiftResponse> {
-  const finalMemories = (data.memories && data.memories.length > 0)
-    ? data.memories
-    : (data.photos || []).map((p, idx) => ({
-        id: p.id || `photo-${idx}`,
-        type: 'photo',
+  // Sanitize photos and memories to ensure no temporary blob: URLs are persisted
+  const rawPhotos = (data.photos || []).filter((p) => p.fileUrl && !p.fileUrl.startsWith('blob:'));
+  const rawMemories = (data.memories || []).filter((m) => m.fileUrl && !m.fileUrl.startsWith('blob:'));
+
+  const finalPhotos = rawPhotos.length > 0
+    ? rawPhotos
+    : rawMemories.filter((m) => m.type === 'photo' || m.fileUrl).map((m, idx) => ({
+        id: m.id || `photo-${idx}`,
+        fileUrl: m.fileUrl,
+        caption: m.caption || m.title || '',
+      }));
+
+  const finalMemories = rawMemories.length > 0
+    ? rawMemories
+    : rawPhotos.map((p, idx) => ({
+        id: p.id || `mem-${idx}`,
+        type: 'photo' as const,
         fileUrl: p.fileUrl,
+        title: p.caption || 'Photo Memory',
         caption: p.caption || '',
+        date: '',
+        frameStyle: data.memoryConfig?.frameStyle || 'polaroid',
         displayOrder: idx,
       }));
+
+  // Filter out system interactives from custom interactives to avoid duplication
+  const baseInteractives = (data.interactives || []).filter(
+    (i) =>
+      i.interactiveType !== 'photo_memories' &&
+      i.interactiveType !== 'cake_box_config' &&
+      i.interactiveType !== 'spotify_music'
+  );
 
   const payload = {
     occasion_type: data.occasion || 'general',
@@ -272,7 +306,7 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
     password_hint: data.passwordHint && data.passwordHint.trim() ? data.passwordHint.trim() : null,
     password_enabled: (data as any).password_enabled ?? false,
     is_published: true,
-    photos: data.photos.map((p, idx) => ({
+    photos: finalPhotos.map((p, idx) => ({
       file_url: p.fileUrl,
       caption: p.caption || '',
       display_order: idx
@@ -285,7 +319,7 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
       is_enabled: true
     })),
     interactives: [
-      ...data.interactives.map((i, idx) => ({
+      ...baseInteractives.map((i, idx) => ({
         interactive_type: i.interactiveType,
         configuration_json: i.configurationJson || {},
         display_order: idx,
@@ -297,7 +331,7 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
           memories: finalMemories,
           memoryConfig: data.memoryConfig
         },
-        display_order: data.interactives.length,
+        display_order: baseInteractives.length,
         is_enabled: true
       }] : []),
       ...(data.spotifyTrack ? [{
@@ -306,7 +340,7 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
           spotifyTrack: data.spotifyTrack,
           musicSource: data.musicSource || 'spotify'
         },
-        display_order: data.interactives.length + 1,
+        display_order: baseInteractives.length + 1,
         is_enabled: true
       }] : []),
       {
@@ -315,20 +349,23 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
           cakeConfig: data.cakeConfig,
           giftBoxConfig: data.giftBoxConfig
         },
-        display_order: data.interactives.length + 2,
+        display_order: baseInteractives.length + 2,
         is_enabled: true
       }
     ],
-    goodies: (data.goodies || []).map((g, idx) => ({
-      goodie_type: g.goodieType,
-      title: g.title || '',
-      description: g.description || '',
-      content: g.content || {},
-      media_url: g.mediaUrl || null,
-      configuration_json: g.configurationJson || {},
-      display_order: g.displayOrder ?? idx,
-      is_enabled: g.isEnabled ?? true
-    }))
+    goodies: (data.goodies || []).map((g, idx) => {
+      const cleanMediaUrl = g.mediaUrl && !g.mediaUrl.startsWith('blob:') ? g.mediaUrl : null;
+      return {
+        goodie_type: g.goodieType,
+        title: g.title || '',
+        description: g.description || '',
+        content: g.content || {},
+        media_url: cleanMediaUrl,
+        configuration_json: g.configurationJson || {},
+        display_order: g.displayOrder ?? idx,
+        is_enabled: g.isEnabled ?? true
+      };
+    })
   };
 
   try {
@@ -359,6 +396,37 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
 }
 
 export async function updateGiftApi(editToken: string, data: WizardData): Promise<PublishedGiftResponse> {
+  const rawPhotos = (data.photos || []).filter((p) => p.fileUrl && !p.fileUrl.startsWith('blob:'));
+  const rawMemories = (data.memories || []).filter((m) => m.fileUrl && !m.fileUrl.startsWith('blob:'));
+
+  const finalPhotos = rawPhotos.length > 0
+    ? rawPhotos
+    : rawMemories.filter((m) => m.type === 'photo' || m.fileUrl).map((m, idx) => ({
+        id: m.id || `photo-${idx}`,
+        fileUrl: m.fileUrl,
+        caption: m.caption || m.title || '',
+      }));
+
+  const finalMemories = rawMemories.length > 0
+    ? rawMemories
+    : rawPhotos.map((p, idx) => ({
+        id: p.id || `mem-${idx}`,
+        type: 'photo' as const,
+        fileUrl: p.fileUrl,
+        title: p.caption || 'Photo Memory',
+        caption: p.caption || '',
+        date: '',
+        frameStyle: data.memoryConfig?.frameStyle || 'polaroid',
+        displayOrder: idx,
+      }));
+
+  const baseInteractives = (data.interactives || []).filter(
+    (i) =>
+      i.interactiveType !== 'photo_memories' &&
+      i.interactiveType !== 'cake_box_config' &&
+      i.interactiveType !== 'spotify_music'
+  );
+
   const payload = {
     occasion_type: data.occasion || 'general',
     recipient_name: data.recipientName.trim(),
@@ -371,7 +439,7 @@ export async function updateGiftApi(editToken: string, data: WizardData): Promis
     password_hint: data.passwordHint && data.passwordHint.trim() ? data.passwordHint.trim() : null,
     password_enabled: Boolean(data.password && data.password.trim()),
     is_published: true,
-    photos: data.photos.map((p, idx) => ({
+    photos: finalPhotos.map((p, idx) => ({
       file_url: p.fileUrl,
       caption: p.caption || '',
       display_order: idx
@@ -384,19 +452,19 @@ export async function updateGiftApi(editToken: string, data: WizardData): Promis
       is_enabled: true
     })),
     interactives: [
-      ...data.interactives.map((i, idx) => ({
+      ...baseInteractives.map((i, idx) => ({
         interactive_type: i.interactiveType,
         configuration_json: i.configurationJson || {},
         display_order: idx,
         is_enabled: true
       })),
-      ...(data.memories && data.memories.length > 0 ? [{
+      ...(finalMemories.length > 0 ? [{
         interactive_type: 'photo_memories',
         configuration_json: {
-          memories: data.memories,
+          memories: finalMemories,
           memoryConfig: data.memoryConfig
         },
-        display_order: data.interactives.length,
+        display_order: baseInteractives.length,
         is_enabled: true
       }] : []),
       ...(data.spotifyTrack ? [{
@@ -405,7 +473,7 @@ export async function updateGiftApi(editToken: string, data: WizardData): Promis
           spotifyTrack: data.spotifyTrack,
           musicSource: data.musicSource || 'spotify'
         },
-        display_order: data.interactives.length + 1,
+        display_order: baseInteractives.length + 1,
         is_enabled: true
       }] : []),
       {
@@ -414,20 +482,23 @@ export async function updateGiftApi(editToken: string, data: WizardData): Promis
           cakeConfig: data.cakeConfig,
           giftBoxConfig: data.giftBoxConfig
         },
-        display_order: data.interactives.length + 2,
+        display_order: baseInteractives.length + 2,
         is_enabled: true
       }
     ],
-    goodies: (data.goodies || []).map((g, idx) => ({
-      goodie_type: g.goodieType,
-      title: g.title || '',
-      description: g.description || '',
-      content: g.content || {},
-      media_url: g.mediaUrl || null,
-      configuration_json: g.configurationJson || {},
-      display_order: g.displayOrder ?? idx,
-      is_enabled: g.isEnabled ?? true
-    }))
+    goodies: (data.goodies || []).map((g, idx) => {
+      const cleanMediaUrl = g.mediaUrl && !g.mediaUrl.startsWith('blob:') ? g.mediaUrl : null;
+      return {
+        goodie_type: g.goodieType,
+        title: g.title || '',
+        description: g.description || '',
+        content: g.content || {},
+        media_url: cleanMediaUrl,
+        configuration_json: g.configurationJson || {},
+        display_order: g.displayOrder ?? idx,
+        is_enabled: g.isEnabled ?? true
+      };
+    })
   };
 
   const response = await fetch(`${API_BASE_URL}/gifts/edit/${editToken}`, {

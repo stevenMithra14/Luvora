@@ -227,7 +227,7 @@ export const DrawingGoodieEditor: React.FC<DrawingGoodieEditorProps> = ({ goodie
         ...goodie.configurationJson,
         title: finalTitle,
         caption: finalCaption,
-        drawingDataUrl: dataUrl,
+        drawingDataUrl: mediaUrlToUse,
       },
     });
     setIsSaving(false);

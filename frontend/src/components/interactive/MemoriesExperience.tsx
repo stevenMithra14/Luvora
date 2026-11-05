@@ -102,7 +102,7 @@ export const MemoriesExperience: React.FC<MemoriesExperienceProps> = ({
       ...item,
       id: item.id || `mem-${idx}`,
       type: isMediaVideo(item) ? 'video' : 'photo',
-      fileUrl: item.fileUrl || (item as any).videoUrl || (item as any).file_url || '',
+      fileUrl: resolveMediaUrl(item.fileUrl || (item as any).videoUrl || (item as any).file_url || ''),
       displayOrder: item.displayOrder ?? idx,
     }));
   }, [memories, photosFallback]);

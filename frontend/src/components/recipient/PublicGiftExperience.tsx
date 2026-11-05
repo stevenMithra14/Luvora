@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Sparkles } from 'lucide-react';
-import { PublicGiftResponse, verifyGiftPasswordApi, fetchUnlockedGiftApi } from '../../services/giftService';
+import { PublicGiftResponse, verifyGiftPasswordApi, fetchUnlockedGiftApi, resolveMediaUrl } from '../../services/giftService';
 import { getThemeConfig } from '../../utils/themeSystem';
 import { GameRenderer } from '../games/GameRenderer';
 import { FinalMessage } from '../interactive/FinalMessage';
@@ -19,6 +19,11 @@ interface PublicGiftExperienceProps {
 
 export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift: initialGift }) => {
   const [giftData, setGiftData] = useState<PublicGiftResponse>(initialGift);
+
+  useEffect(() => {
+    setGiftData(initialGift);
+  }, [initialGift]);
+
   const isFriendship = isFriendshipOccasion(giftData.occasion_type);
   // Sequential Stages: box -> anniversary (friendship) / cake (birthday) -> intro -> games -> goodies -> memories -> final
   const [activeStage, setActiveStage] = useState<'box' | 'cake' | 'anniversary' | 'intro' | 'games' | 'goodies' | 'memories' | 'final'>('box');
@@ -49,11 +54,21 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
     setActiveStage('intro');
   };
 
-  const formattedPhotos = (giftData.photos || []).map((p) => ({
-    id: p.id,
-    fileUrl: p.file_url,
-    caption: p.caption || '',
-  }));
+  const memoriesModule = (giftData.interactives || []).find((i) => i.interactive_type === 'photo_memories');
+  const memoriesFromApi = memoriesModule?.configuration_json?.memories;
+  const memoryConfigFromApi = memoriesModule?.configuration_json?.memoryConfig;
+
+  const formattedPhotos = (giftData.photos && giftData.photos.length > 0)
+    ? giftData.photos.map((p) => ({
+        id: p.id,
+        fileUrl: resolveMediaUrl(p.file_url),
+        caption: p.caption || '',
+      }))
+    : (memoriesFromApi || []).filter((m: any) => m.type === 'photo' || m.fileUrl).map((m: any, idx: number) => ({
+        id: m.id || `photo-${idx}`,
+        fileUrl: resolveMediaUrl(m.fileUrl),
+        caption: m.caption || m.title || '',
+      }));
 
   const formattedGoodies = (giftData.goodies || []).map((g) => ({
     id: g.id,
@@ -61,7 +76,7 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
     title: g.title || '',
     description: g.description || '',
     content: g.content,
-    mediaUrl: g.media_url || '',
+    mediaUrl: resolveMediaUrl(g.media_url || ''),
     configurationJson: g.configuration_json || {},
     displayOrder: g.display_order,
     isEnabled: g.is_enabled,
@@ -88,10 +103,6 @@ export const PublicGiftExperience: React.FC<PublicGiftExperienceProps> = ({ gift
   );
 
   const messageLines = (giftData.message || '').split('\n').filter((l) => l.trim().length > 0);
-
-  const memoriesModule = (giftData.interactives || []).find((i) => i.interactive_type === 'photo_memories');
-  const memoriesFromApi = memoriesModule?.configuration_json?.memories;
-  const memoryConfigFromApi = memoriesModule?.configuration_json?.memoryConfig;
 
   const spotifyModule = (giftData.interactives || []).find((i) => i.interactive_type === 'spotify_music');
   const spotifyTrackFromApi = spotifyModule?.configuration_json?.spotifyTrack;

@@ -755,7 +755,7 @@ export const GoodiesExperience: React.FC<GoodiesExperienceProps> = ({
 
                   <div className="p-3 bg-white rounded-3xl shadow-2xl max-w-lg mx-auto">
                     <img
-                      src={resolveMediaUrl(activeGoodie.configurationJson?.drawingDataUrl || activeGoodie.mediaUrl)}
+                      src={resolveMediaUrl(activeGoodie.mediaUrl || activeGoodie.configurationJson?.drawingDataUrl)}
                       alt="Handmade Drawing"
                       className="w-full max-h-[380px] rounded-2xl object-contain bg-white shadow-inner"
                     />

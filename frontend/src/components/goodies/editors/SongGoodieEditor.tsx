@@ -35,6 +35,11 @@ export const SongGoodieEditor: React.FC<SongGoodieEditorProps> = ({ goodie, onSa
   };
 
   const handleSave = () => {
+    if (audioUrl.startsWith('blob:')) {
+      setUploadError('Temporary browser blob URLs cannot be saved. Please upload the audio file.');
+      return;
+    }
+
     onSave(goodie.id, {
       title: songTitle || 'A Song For You',
       description: `${songTitle} - ${artist}`,

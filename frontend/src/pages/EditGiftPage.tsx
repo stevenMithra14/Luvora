@@ -29,7 +29,22 @@ import { SurpriseGoodieEditor } from '../components/goodies/editors/SurpriseGood
 
 export const EditGiftPage: React.FC = () => {
   const { edit_token } = useParams<{ edit_token: string }>();
-  const { data, setOccasion, setRecipientInfo, setCustomization, setMemories, setPhotos, setInteractives, setGoodies, addGoodie, updateGoodie, removeGoodie } = useWizard();
+  const {
+    data,
+    setOccasion,
+    setRecipientInfo,
+    setCustomization,
+    setMemories,
+    setPhotos,
+    setInteractives,
+    setGoodies,
+    setCakeConfig,
+    setGiftBoxConfig,
+    setMemoryConfig,
+    addGoodie,
+    updateGoodie,
+    removeGoodie
+  } = useWizard();
 
   const [publishedGift, setPublishedGift] = useState<PublishedGiftResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,6 +69,17 @@ export const EditGiftPage: React.FC = () => {
         setRecipientInfo(res.recipient_name, res.recipient_date || '', false);
         const spotifyModule = (res.interactives || []).find((i) => i.interactive_type === 'spotify_music');
         const memoriesModule = (res.interactives || []).find((i) => i.interactive_type === 'photo_memories');
+        const cakeBoxModule = (res.interactives || []).find((i) => i.interactive_type === 'cake_box_config');
+
+        if (cakeBoxModule?.configuration_json?.cakeConfig) {
+          setCakeConfig(cakeBoxModule.configuration_json.cakeConfig);
+        }
+        if (cakeBoxModule?.configuration_json?.giftBoxConfig) {
+          setGiftBoxConfig(cakeBoxModule.configuration_json.giftBoxConfig);
+        }
+        if (memoriesModule?.configuration_json?.memoryConfig) {
+          setMemoryConfig(memoriesModule.configuration_json.memoryConfig);
+        }
 
         setCustomization({
           coverTitle: res.title || 'A Special Gift For You',
@@ -65,12 +91,39 @@ export const EditGiftPage: React.FC = () => {
           spotifyTrack: spotifyModule?.configuration_json?.spotifyTrack || null,
           musicSource: spotifyModule ? 'spotify' : 'custom',
         });
-        if (memoriesModule?.configuration_json?.memories) {
-          setMemories(memoriesModule.configuration_json.memories);
-        }
-        if (res.photos) {
-          setPhotos(res.photos.map((p) => ({ id: p.id, fileUrl: p.file_url, caption: p.caption || '' })));
-        }
+
+        const rawMemories = memoriesModule?.configuration_json?.memories || [];
+        const rawPhotos = (res.photos || []).map((p) => ({
+          id: p.id,
+          fileUrl: p.file_url,
+          caption: p.caption || '',
+        }));
+
+        // Mutual fallback: ensure both photos and memories are populated
+        const hydratedMemories = rawMemories.length > 0
+          ? rawMemories
+          : rawPhotos.map((p, idx) => ({
+              id: p.id || `mem-${idx}`,
+              type: 'photo' as const,
+              fileUrl: p.fileUrl,
+              title: p.caption || 'Photo Memory',
+              caption: p.caption || '',
+              date: '',
+              frameStyle: 'polaroid' as const,
+              displayOrder: idx,
+            }));
+
+        const hydratedPhotos = rawPhotos.length > 0
+          ? rawPhotos
+          : rawMemories.filter((m: any) => m.type === 'photo' || m.fileUrl).map((m: any, idx: number) => ({
+              id: m.id || `photo-${idx}`,
+              fileUrl: m.fileUrl,
+              caption: m.caption || m.title || '',
+            }));
+
+        setPhotos(hydratedPhotos);
+        setMemories(hydratedMemories);
+
         if (res.interactives) {
           setInteractives(res.interactives.map((i) => ({ id: i.id, interactiveType: i.interactive_type, configurationJson: i.configuration_json || {} })));
         }
