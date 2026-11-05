@@ -6,7 +6,7 @@ import { WizardProgress } from '../components/wizard/WizardProgress';
 import { LiveDevicePreview } from '../components/wizard/preview/LiveDevicePreview';
 import { PublishSuccessModal } from '../components/wizard/preview/PublishSuccessModal';
 import { MobileGiftPreviewModal } from '../components/wizard/preview/MobileGiftPreviewModal';
-import { publishGiftApi } from '../services/giftService';
+import { publishGiftApi, SAFE_PUBLISH_USER_MESSAGE, isTechnicalDatabaseError } from '../services/giftService';
 
 export const CreateGiftPreview: React.FC = () => {
   const navigate = useNavigate();
@@ -50,8 +50,9 @@ export const CreateGiftPreview: React.FC = () => {
         editToken: res.edit_token,
       });
     } catch (err: any) {
-      const msg = typeof err === 'string' ? err : err?.message || err?.detail || 'Failed to publish gift. Please try again.';
-      setApiError(typeof msg === 'string' ? msg : 'Failed to publish gift.');
+      const msg = typeof err === 'string' ? err : err?.message || err?.detail || SAFE_PUBLISH_USER_MESSAGE;
+      const strMsg = typeof msg === 'string' ? msg : SAFE_PUBLISH_USER_MESSAGE;
+      setApiError(isTechnicalDatabaseError(strMsg) ? SAFE_PUBLISH_USER_MESSAGE : strMsg);
     } finally {
       setIsPublishing(false);
     }

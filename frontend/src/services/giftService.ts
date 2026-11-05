@@ -147,11 +147,39 @@ export async function uploadVideoApi(file: File): Promise<{ status: string; url:
   return await response.json();
 }
 
-export const parseErrorDetail = (errorData: any, fallback: string): string => {
+export const SAFE_PUBLISH_USER_MESSAGE = "We couldn't publish your gift right now. Your saved work is safe. Please try again.";
+
+export const isTechnicalDatabaseError = (msg?: string | null): boolean => {
+  if (!msg || typeof msg !== 'string') return false;
+  const lower = msg.toLowerCase();
+  return (
+    lower.includes('psycopg2') ||
+    lower.includes('operationalerror') ||
+    lower.includes('sqlalchemy') ||
+    lower.includes('tenant/user') ||
+    lower.includes('enotfound') ||
+    lower.includes('pooler.supabase.com') ||
+    lower.includes('supabase.co') ||
+    lower.includes('internal server error') ||
+    lower.includes('server error:') ||
+    lower.includes('connection refused') ||
+    lower.includes('password authentication failed') ||
+    lower.includes('database error') ||
+    lower.includes('could not translate host name') ||
+    lower.includes('ssl error')
+  );
+};
+
+export const parseErrorDetail = (errorData: any, fallback: string = SAFE_PUBLISH_USER_MESSAGE): string => {
   if (!errorData) return fallback;
   const detail = errorData.detail;
-  if (!detail) return errorData.message || fallback;
-  if (typeof detail === 'string') return detail;
+  if (!detail) {
+    const rawMsg = errorData.message || fallback;
+    return isTechnicalDatabaseError(rawMsg) ? SAFE_PUBLISH_USER_MESSAGE : rawMsg;
+  }
+  if (typeof detail === 'string') {
+    return isTechnicalDatabaseError(detail) ? SAFE_PUBLISH_USER_MESSAGE : detail;
+  }
   if (Array.isArray(detail)) {
     const msgs = detail.map((item: any) => {
       if (typeof item === 'string') return item;
@@ -164,10 +192,12 @@ export const parseErrorDetail = (errorData: any, fallback: string): string => {
       }
       return typeof item === 'object' ? JSON.stringify(item) : String(item);
     });
-    return msgs.join(', ');
+    const joined = msgs.join(', ');
+    return isTechnicalDatabaseError(joined) ? SAFE_PUBLISH_USER_MESSAGE : joined;
   }
   if (typeof detail === 'object') {
-    return detail.message || detail.msg || JSON.stringify(detail);
+    const objMsg = detail.message || detail.msg || JSON.stringify(detail);
+    return isTechnicalDatabaseError(objMsg) ? SAFE_PUBLISH_USER_MESSAGE : objMsg;
   }
   return fallback;
 };
@@ -310,7 +340,11 @@ export async function publishGiftApi(data: WizardData): Promise<PublishedGiftRes
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(parseErrorDetail(errorData, 'Failed to publish gift. Please try again.'));
+      const parsed = parseErrorDetail(errorData, SAFE_PUBLISH_USER_MESSAGE);
+      if (response.status >= 500 || isTechnicalDatabaseError(parsed)) {
+        throw new Error(SAFE_PUBLISH_USER_MESSAGE);
+      }
+      throw new Error(parsed);
     }
 
     return await response.json();
@@ -404,7 +438,11 @@ export async function updateGiftApi(editToken: string, data: WizardData): Promis
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Failed to update gift. Please try again.');
+    const parsed = parseErrorDetail(errorData, SAFE_PUBLISH_USER_MESSAGE);
+    if (response.status >= 500 || isTechnicalDatabaseError(parsed)) {
+      throw new Error(SAFE_PUBLISH_USER_MESSAGE);
+    }
+    throw new Error(parsed);
   }
 
   return await response.json();
